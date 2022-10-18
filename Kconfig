@@ -1,0 +1,5 @@
+menu "100ASK components"
+    source "$IDF_PATH/components/100ask_components/epd_100ask_drivers/Kconfig"
+    source "$IDF_PATH/components/100ask_components/epd_100ask_paint/Kconfig"
+    source "$IDF_PATH/components/100ask_components/fc_joypad_100ask_drivers/Kconfig"
+endmenu

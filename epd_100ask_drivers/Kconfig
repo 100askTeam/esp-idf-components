@@ -1,0 +1,94 @@
+menu "100ASK EPD setting"
+    menu "EPD Pin Assignments"
+        depends on EPD_100ASK_PIN_STRAP
+
+        config EPD_100ASK_DISP_SPI_FREQUENCY
+            int "Configure the display SPI frequency"
+            default 25000000
+            help
+                Configure the display SPI frequency here.
+
+        config EPD_100ASK_DISP_SPI_MODE
+            int "Configure the display SPI mode"
+            default 0
+            help
+                Configure the display SPI mode here.
+
+        config EPD_100ASK_DISP_PIN_MOSI
+            int "GPIO for MOSI (Master Out Slave In (SDI PIN))"
+            default 11
+            help
+                Configure the display MOSI (SDI PIN) pin here.
+                
+        config EPD_100ASK_DISPLAY_USE_PIN_MISO
+            bool "GPIO for MISO (Master In Slave Out)"
+            default n
+            help
+                Enable the MISO signal to control the display. You can disable
+                it when the display does not need MISO signal to be controlled.
+
+        config EPD_100ASK_DISP_PIN_MISO
+            int "GPIO for MISO (Master In Slave Out)"
+            depends on EPD_100ASK_DISPLAY_USE_PIN_MISO
+            default -1
+            default 0
+
+            help
+                Configure the display MISO pin here.s
+
+        config EPD_100ASK_DISP_PIN_CLK
+            int "GPIO for CLK (SCK / Serial Clock)"
+            default 12
+
+            help
+                Configure the display CLK pin here.
+
+        config EPD_100ASK_DISP_PIN_CS
+            int "GPIO for CS (Slave Select)"
+            default 10
+
+            help
+                Configure the display CS pin here.
+
+        config EPD_100ASK_DISP_PIN_DC
+            int "GPIO for DC (Data / Command)"
+            default 5
+
+            help
+                Configure the display DC pin here.
+            
+        config EPD_100ASK_DISP_PIN_RST
+            int "GPIO for Reset" 
+            default 6
+
+            help
+                Configure the display Reset pin here.
+
+        config EPD_100ASK_DISP_PIN_BUSY
+            int "GPIO for Busy"
+            default 7
+
+            help
+                Configure the display Busy pin here.
+        
+        config EPD_100ASK_DISP_WIDTH
+            int "Screen width"
+            default 240
+
+            help
+                Configure the display screen width here.
+
+        config EPD_100ASK_DISP_HEIGHT
+            int "Screen height"
+            default 360
+
+            help
+                Configure the display screen height here.
+    endmenu
+    
+    config EPD_100ASK_PIN_STRAP
+        bool "Display EPD Pin Assignments"
+        default "n"
+            help Display EPD Pin Assignments
+
+endmenu

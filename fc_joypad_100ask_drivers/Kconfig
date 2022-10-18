@@ -1,0 +1,29 @@
+menu "100ASK FC joypad setting"
+    menu "FC joypad Assignments"
+        depends on USE_100ASK_FC_JOYPAD
+
+        config 100ASK_FC_JOYPAD_CLOCK_PIN
+            int "Configure the FC joypad clock pin(ID)"
+            default 40
+            help
+                Configure the FC joypad clock pin(ID) here.
+
+        config 100ASK_FC_JOYPAD_LATCH_PIN
+            int "Configure the FC joypad latch pin(D+)"
+            default 41
+            help
+                Configure the fc joypad latch pin(D+) here.
+
+        config 100ASK_FC_JOYPAD_DATA_PIN
+            int "Configure the FC joypad data pin(D-)"
+            default 42
+            help
+                Configure the FC joypad data pin(D-) here.
+                
+    endmenu
+    
+    config USE_100ASK_FC_JOYPAD
+        bool "Display FC joypad Pin Assignments"
+        default "n"
+            help Display FC joypad Pin Assignments
+endmenu

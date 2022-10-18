@@ -1,0 +1,23 @@
+menu "100ASK EPD  paint setting"
+    menu "EPD paint Assignments"
+        depends on EPD_100ASK_USE_PAINT
+
+        config EPD_100ASK_PAINT_WIDTH
+            int "Configure the paint width"
+            default 240
+            help
+                Configure the paint width here.
+
+        config EPD_100ASK_PAINT_HEIGHT
+            int "Configure the paint heigt"
+            default 360
+            help
+                Configure the paint heigt here.
+                
+    endmenu
+    
+    config EPD_100ASK_USE_PAINT
+        bool "Display EPD Pin Assignments"
+        default "n"
+            help Display EPD Pin Assignments
+endmenu
