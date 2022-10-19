@@ -1,28 +1,32 @@
 menu "100ASK EPD setting"
     menu "EPD Pin Assignments"
-        depends on EPD_100ASK_PIN_STRAP
+        depends on USE_100ASK_EPD
 
         config EPD_100ASK_DISP_SPI_FREQUENCY
             int "Configure the display SPI frequency"
             default 25000000
+
             help
                 Configure the display SPI frequency here.
 
         config EPD_100ASK_DISP_SPI_MODE
             int "Configure the display SPI mode"
             default 0
+
             help
                 Configure the display SPI mode here.
 
         config EPD_100ASK_DISP_PIN_MOSI
             int "GPIO for MOSI (Master Out Slave In (SDI PIN))"
             default 11
+
             help
                 Configure the display MOSI (SDI PIN) pin here.
                 
         config EPD_100ASK_DISPLAY_USE_PIN_MISO
             bool "GPIO for MISO (Master In Slave Out)"
             default n
+
             help
                 Enable the MISO signal to control the display. You can disable
                 it when the display does not need MISO signal to be controlled.
@@ -86,9 +90,11 @@ menu "100ASK EPD setting"
                 Configure the display screen height here.
     endmenu
     
-    config EPD_100ASK_PIN_STRAP
+    config USE_100ASK_EPD
         bool "Display EPD Pin Assignments"
         default "n"
-            help Display EPD Pin Assignments
+
+        help 
+            Display EPD Pin Assignments
 
 endmenu

@@ -13,6 +13,7 @@ extern "C" {
 /*********************
  *      INCLUDES
  *********************/
+#ifdef CONFIG_USE_100ASK_EPD
 
 /*********************
  *      DEFINES
@@ -55,6 +56,8 @@ void epd_100ask_refresh(EPD_LUT_TYPE lut);
 /**********************
  *      MACROS
  **********************/
+
+#endif
 
 #ifdef __cplusplus
 } /*extern "C"*/

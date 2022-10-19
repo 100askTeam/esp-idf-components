@@ -13,6 +13,7 @@ extern "C" {
 /*********************
  *      INCLUDES
  *********************/
+#ifdef CONFIG_USE_100ASK_EPD
 
 /*********************
  *      DEFINES
@@ -188,6 +189,8 @@ static const unsigned char lut_bb[] ={
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 };
+
+#endif
 
 #ifdef __cplusplus
 } /*extern "C"*/

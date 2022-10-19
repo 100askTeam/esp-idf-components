@@ -13,6 +13,8 @@
 
 #include "fc_joypad_100ask_drivers.h"
 
+#ifdef CONFIG_USE_100ASK_FC_JOYPAD
+
 /*********************
  *      DEFINES
  *********************/
@@ -126,3 +128,5 @@ fc_joypad_state_t fc_joypad_100ask_state(void)
 /**********************
  *   STATIC FUNCTIONS
  **********************/
+
+#endif

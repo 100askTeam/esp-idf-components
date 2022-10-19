@@ -19,6 +19,8 @@
 #include "epd_100ask_drivers.h"
 #include "epd_100ask_luts.h"
 
+#ifdef CONFIG_USE_100ASK_EPD
+
 /*********************
  *      DEFINES
  *********************/
@@ -538,3 +540,4 @@ static void epd_100ask_lutDU(void)
     }
 }
 
+#endif

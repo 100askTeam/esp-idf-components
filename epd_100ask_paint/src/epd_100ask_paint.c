@@ -6,6 +6,9 @@
 /*********************
  *      INCLUDES
  *********************/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +18,7 @@
 
 #include "epd_100ask_paint.h"
 
+#ifdef CONFIG_USE_100ASK_EPD_PAINT
 
 /*********************
  *      DEFINES
@@ -371,3 +375,6 @@ void epd_100ask_paint_draw_circle(uint16_t X_Center, uint16_t Y_Center, uint16_t
 /**********************
  *   STATIC FUNCTIONS
  **********************/
+
+
+#endif

@@ -12,6 +12,7 @@ extern "C" {
 /*********************
  *      INCLUDES
  *********************/
+#ifdef CONFIG_USE_100ASK_EPD_PAINT
 
 /*********************
  *      DEFINES
@@ -109,6 +110,8 @@ void epd_100ask_paint_draw_circle(uint16_t X_Center, uint16_t Y_Center, uint16_t
 /**********************
  *      MACROS
  **********************/
+
+#endif
 
 #ifdef __cplusplus
 } /*extern "C"*/

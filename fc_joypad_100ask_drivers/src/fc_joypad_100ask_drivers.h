@@ -12,6 +12,8 @@ extern "C" {
 /*********************
  *      INCLUDES
  *********************/
+#ifdef CONFIG_USE_100ASK_FC_JOYPAD
+
 #include "driver/gpio.h"
 
 /*********************
@@ -50,6 +52,8 @@ fc_joypad_state_t fc_joypad_100ask_state(void);
 /**********************
  *      MACROS
  **********************/
+
+#endif
 
 #ifdef __cplusplus
 } /*extern "C"*/
