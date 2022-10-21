@@ -1,0 +1,5 @@
+version: "1.0.0"
+description: This is the customized component of 100ASK(ESP32 Teaching), to be used with the IDF component manager.
+url: https://github.com/100askTeam/esp-idf_components
+dependencies:
+  idf: ">=4.1"
