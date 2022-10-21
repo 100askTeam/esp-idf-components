@@ -12,25 +12,26 @@
 
 ## Contents
 
+  - [Add esp-100ask-components](#Add esp-100ask-components)
   - [Documentation](#documentation)
 
-### Add 100ask_components to the project
+### Add esp-100ask-components
 
-`100ask_components` has been embedded in the [esp-idf](https://github.com/100askTeam/esp-idf) repository maintained by 100ask as a submodule. It can be compiled and used directly according to the [document](https://esp32.100ask.net/#/DShanMCU-Mio/ESP-IDF/chapter2) without manually adding it to the components directory of its own project.
+`esp-100ask-components ` has been embedded in the [esp-100ask-examples](https://github.com/100askTeam/esp-100ask-examples)  repository maintained by 100ask as a submodule. It can be compiled and used directly according to the [document](https://esp32.100ask.net/#/DShanMCU-Mio/ESP-IDF/chapter1) without manually adding it to the components directory of its own project.
 
-> If you use [esp-idf](https://github.com/100askTeam/esp-idf) maintained by 100ask, run `idf.py menuconfig` before compiling and then configure each component in `(Top) → Component config → 100ASK components`.
+> Run `idf.py menuconfig` before compiling and then configure each component in `(Top) → Component config → 100ASK components`.
 
 Method of manually adding to the components directory of your own project:
 
-1. clone the 100ask_components:
+1. clone the esp-100ask-components :
 
 ```shell
-git clone https://github.com/100askTeam/100ask_components.git
+cd components
+git clone https://github.com/100askTeam/esp-100ask-components.git
+git submodule update --init --recursive
 ```
 
-2. Then copy the component directory in 'AA100ask_componentsA/(the component you want)' to the **components** directory of your project.
-
-3. Run `idf.py menuconfig` before compiling and then configure each component in `(Top) → Component config`.
+2. Run `idf.py menuconfig` before compiling and then configure each component in `(Top) → Component config → 100ASK components`.
 
 ### Documentation
 
