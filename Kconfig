@@ -1,7 +1,7 @@
-menu "100ASK components"
-    source "$IDF_PATH/components/100ask_components/epd_100ask_drivers/Kconfig"
-    source "$IDF_PATH/components/100ask_components/epd_100ask_paint/Kconfig"
-    source "$IDF_PATH/components/100ask_components/tft_lcd_100ask_drivers/Kconfig"
-    source "$IDF_PATH/components/100ask_components/fc_joypad_100ask_drivers/Kconfig"
-    source "$IDF_PATH/components/100ask_components/lvgl/Kconfig"
+menu "100ask components"
+    rsource "epd_100ask_drivers/Kconfig"
+    rsource "epd_100ask_paint/Kconfig"
+    rsource "tft_lcd_100ask_drivers/Kconfig"
+    rsource "fc_joypad_100ask_drivers/Kconfig"
+    rsource "lvgl/Kconfig"
 endmenu
