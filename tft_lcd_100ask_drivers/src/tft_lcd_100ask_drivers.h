@@ -37,6 +37,9 @@ extern "C" {
 
 #define TFT_LCD_COLOR_BLACK     0x0000
 #define TFT_LCD_COLOR_WHITE     0xFFFF
+#define TFT_LCD_COLOR_BLUE      0xF800
+#define TFT_LCD_COLOR_RED       0x07E0
+#define TFT_LCD_COLOR_GREEN     0x001F
 
 /**********************
  *      TYPEDEFS

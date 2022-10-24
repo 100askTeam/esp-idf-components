@@ -35,7 +35,6 @@ menu "100ASK EPD setting"
             int "GPIO for MISO (Master In Slave Out)"
             depends on EPD_100ASK_DISPLAY_USE_PIN_MISO
             default -1
-            default 0
 
             help
                 Configure the display MISO pin here.s

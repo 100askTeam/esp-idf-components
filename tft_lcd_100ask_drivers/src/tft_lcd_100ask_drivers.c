@@ -27,10 +27,6 @@
  *********************/
 #define TAG "TFT_LCD_DRIVERS"
 
-
-/**********************
- *      TYPEDEFS
- **********************/
 #define LINE_BUFFERS (2)
 #define LINE_COUNT   (20)
 
@@ -48,7 +44,9 @@
 
 #define PIXEL_MASK (0x1F) 
 
-uint16_t *line[LINE_BUFFERS];
+/**********************
+ *      TYPEDEFS
+ **********************/
 
 /**********************
  *  STATIC PROTOTYPES
@@ -57,6 +55,8 @@ uint16_t *line[LINE_BUFFERS];
 /**********************
  *  STATIC VARIABLES
  **********************/
+uint16_t *line[LINE_BUFFERS];
+
 #if defined(CONFIG_USE_100ASK_SPI_TFT_LCD_ST7796S)
 static ST7796S_driver_t display = {
 		.pin_reset      = SPI_TFT_LCD_100ASK_DISP_PIN_RST,

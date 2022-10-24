@@ -33,21 +33,21 @@ typedef enum {
     FC_JOYPAD_100ASK_BTN_DOWN,
     FC_JOYPAD_100ASK_BTN_LEFT,
     FC_JOYPAD_100ASK_BTN_RIGHT,
-} fc_joypad_btn_t;
+} fc_joypad_100ask_btn_t;
 
 typedef enum {
     FC_JOYPAD_100ASK_RELEASE = 0,
     FC_JOYPAD_100ASK_PRESSED,
-} fc_joypad_state_t;
+} fc_joypad_100ask_state_t;
 
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
 void fc_joypad_100ask_init(void);
 void fc_joypad_100ask_read(void);
-bool fc_joypad_100ask_is_pressed(fc_joypad_btn_t btn);
-bool fc_joypad_100ask_is_release(fc_joypad_btn_t btn);
-fc_joypad_state_t fc_joypad_100ask_state(void);
+bool fc_joypad_100ask_is_pressed(fc_joypad_100ask_btn_t btn);
+bool fc_joypad_100ask_is_release(fc_joypad_100ask_btn_t btn);
+fc_joypad_100ask_state_t fc_joypad_100ask_state(void);
 
 /**********************
  *      MACROS

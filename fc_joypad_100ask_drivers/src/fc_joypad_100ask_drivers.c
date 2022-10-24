@@ -99,7 +99,7 @@ void fc_joypad_100ask_read(void)
 }
 
 
-bool fc_joypad_100ask_is_pressed(fc_joypad_btn_t btn)
+bool fc_joypad_100ask_is_pressed(fc_joypad_100ask_btn_t btn)
 {
     if ((((uint8_t)1 << btn) & g_fc_joypad.player) >= 1)
         return true;
@@ -108,7 +108,7 @@ bool fc_joypad_100ask_is_pressed(fc_joypad_btn_t btn)
 }
 
 
-bool fc_joypad_100ask_is_release(fc_joypad_btn_t btn)
+bool fc_joypad_100ask_is_release(fc_joypad_100ask_btn_t btn)
 {
     if ((((uint8_t)1 << btn) & g_fc_joypad.prev_player_value) >= 1)
         return true;
@@ -117,7 +117,7 @@ bool fc_joypad_100ask_is_release(fc_joypad_btn_t btn)
 }
 
 
-fc_joypad_state_t fc_joypad_100ask_state(void)
+fc_joypad_100ask_state_t fc_joypad_100ask_state(void)
 {
     if(g_fc_joypad.joypad_state)
         return  FC_JOYPAD_100ASK_PRESSED;

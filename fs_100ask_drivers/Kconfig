@@ -1,0 +1,74 @@
+menu "100ASK File system drivers setting"
+    menu "File system Pin Assignments"
+        depends on USE_100ASK_FS_DRIVERS
+
+        choice
+            bool "Select the storage peripheral type"
+            default USE_100ASK_SD_SPI
+            help
+                SPI SD Card(MicroSD Card Adapter)
+
+            config USE_100ASK_SD_SPI
+                bool "SPI SD Card(MicroSD Card Adapter)"
+        endchoice
+
+        choice
+            bool "File system interfaces for common APIs(LVGL)"
+            default LV_USE_100ASK_FS_FATFS
+            help
+                SFile system interfaces for common APIs(LVGL)
+
+            config LV_USE_100ASK_FS_FATFS
+                bool "API for FATFS (needs to be added separately). Uses f_open, f_read, etc"
+        endchoice
+
+        menu "SPI SD card setting"
+            depends on USE_100ASK_SD_SPI
+            
+            config SPI_SD_CARD_100ASK_MOUNT_POINT
+                string "GPIO for MOSI (Master Out Slave In (SDI PIN))"
+                default "/sdcard"
+
+            config SPI_SD_CARD_100ASK_PIN_MOSI
+                int "GPIO for MOSI (Master Out Slave In (SDI PIN))"
+                default 17
+    
+                help
+                    Configure the display MOSI (SDI PIN) pin here.
+    
+            config SPI_SD_CARD_100ASK_PIN_MISO
+                int "GPIO for MISO (Master In Slave Out)"
+                default 18
+    
+                help
+                    Configure the display MISO pin here
+    
+            config SPI_SD_CARD_100ASK_PIN_CLK
+                int "GPIO for CLK (SCK / Serial Clock)"
+                default 16
+    
+                help
+                    Configure the display CLK pin here.
+    
+            config SPI_SD_CARD_100ASK_PIN_CS
+                int "GPIO for CS (Slave Select)"
+                default 15
+    
+                help
+                    Configure the display CS pin here.
+    
+            config SPI_SD_CARD_100ASK_MAX_TRANSFER_SIZE
+                int "SPI bus max transfer size"
+                default 4000
+                
+        endmenu
+    endmenu
+    
+    config USE_100ASK_FS_DRIVERS
+        bool "Display 100ask file system drivers Pin Assignments"
+        default "n"
+
+        help 
+            Display 100ask file system drivers Pin Assignments
+
+endmenu

@@ -186,7 +186,7 @@ void ST7796S_write_pixels(ST7796S_driver_t *driver, ST7796S_color_t *pixels, siz
 
 void ST7796S_write_lines(ST7796S_driver_t *driver, int ypos, int xpos, int width, uint16_t *linedata, int lineCount){
 	// ST7796S_set_window(driver,xpos,ypos,240,ypos +20);
-    int size = width * 2 * 8 * lineCount;
+    //int size = width * 2 * 8 * lineCount;
 
     //driver->buffer_secondary = linedata;
     //driver->current_buffer = driver->buffer_secondary;
@@ -248,19 +248,6 @@ static void ST7796S_pre_cb(spi_transaction_t *transaction) {
 }
 
 static void ST7796S_config(ST7796S_driver_t *driver){
-
-    const uint8_t caset[4] = {
-		0x00,
-		0x00,
-		(driver->display_width - 1) >> 8,
-		(driver->display_width - 1) & 0xff
-	};
-	const uint8_t raset[4] = {
-		0x00,
-		0x00,
-		(driver->display_height - 1) >> 8,
-		(driver->display_height - 1) & 0xff
-	};
 	const ST7796S_command_t init_sequence[] = {
 		{0xCF, 0, 3, (const uint8_t *)"\x00\x83\x30"},
 		{0xED, 0, 4, (const uint8_t *)"\x64\x03\x12\x81"},
