@@ -4,13 +4,22 @@ menu "100ASK File system drivers setting"
 
         choice
             bool "Select the storage peripheral type"
-            default USE_100ASK_SD_SPI
+            default USE_100ASK_INTERNAL_FLASH
             help
-                SPI SD Card(MicroSD Card Adapter)
+                Select the storage peripheral type
 
-            config USE_100ASK_SD_SPI
-                bool "SPI SD Card(MicroSD Card Adapter)"
+            config USE_100ASK_EXTERNAL_SDCARD_SPI
+                bool "Use External SDCard(MicroSD Card Adapter)"
+            config USE_100ASK_INTERNAL_FLASH
+                bool "Use Internal Flash"
         endchoice
+
+        config FS_DRIVERS_MOUNT_POINT
+            string "Set mount point"
+            default "/disk"
+
+            help
+                Set file system mount point.
 
         choice
             bool "File system interfaces for common APIs(LVGL)"
@@ -23,11 +32,7 @@ menu "100ASK File system drivers setting"
         endchoice
 
         menu "SPI SD card setting"
-            depends on USE_100ASK_SD_SPI
-            
-            config SPI_SD_CARD_100ASK_MOUNT_POINT
-                string "GPIO for MOSI (Master Out Slave In (SDI PIN))"
-                default "/sdcard"
+            depends on USE_100ASK_EXTERNAL_SDCARD_SPI
 
             config SPI_SD_CARD_100ASK_PIN_MOSI
                 int "GPIO for MOSI (Master Out Slave In (SDI PIN))"

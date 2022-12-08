@@ -1,10 +1,10 @@
 /**
- * @file lv_port_fs_fatfs.h
+ * @file fs_100ask_hal.h
  *
  */
 
-#ifndef LV_PORT_FS_FATFS_H
-#define LV_PORT_FS_FATFS_H
+#ifndef EPD_100ASK_HAL_H
+#define EPD_100ASK_HAL_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,17 +13,15 @@ extern "C" {
 /*********************
  *      INCLUDES
  *********************/
-#if defined(CONFIG_LV_USE_100ASK_FS_FATFS)
-
-#ifdef LV_LVGL_H_INCLUDE_SIMPLE
-#include "lvgl.h"
-#else
-#include "lvgl/lvgl.h"
-#endif
+#ifdef CONFIG_USE_100ASK_FS_DRIVERS
 
 /*********************
  *      DEFINES
  *********************/
+
+#define EPD_100ASK_COLOR_WHITE     0xFF
+#define EPD_100ASK_COLOR_BLACK     0x00
+
 
 /**********************
  *      TYPEDEFS
@@ -32,16 +30,20 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
-void lv_port_fs_100ask_init(void);
+void fs_100ask_hal_init(void);
+
+void fs_100ask_hal_release(void);
+
+sdmmc_card_t * fs_100ask_hal_get_mount_card(void);
 
 /**********************
  *      MACROS
  **********************/
 
+#endif
+
 #ifdef __cplusplus
 } /*extern "C"*/
 #endif
 
-#endif /*LV_PORT_FS_FATFS_H*/
-
-#endif /*Disable/Enable content*/
+#endif /*EPD_100ASK_HAL_H*/

@@ -12,7 +12,7 @@
 #if defined(CONFIG_LV_USE_100ASK_FS_FATFS)
 
 #include "lv_port_fs_fatfs.h"
-#include "fs_100ask_drivers.h"
+#include "fs_100ask_hal.h"
 
 /*********************
  *      DEFINES
@@ -95,7 +95,7 @@ static void fs_init(void)
     /*E.g. for FatFS initialize the SD card and FatFS itself*/
 
     /*You code here*/
-    fs_100ask_drivers_init();
+    fs_100ask_hal_init();
 }
 
 /**
