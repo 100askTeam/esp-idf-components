@@ -129,8 +129,6 @@ void epd_100ask_init(void)
   //Initialize the EPD
   epd_initialize(g_spi);
 
-  g_lut_flag = 0;
-
   ESP_LOGI(TAG, "Initialized successfully!");
 }
 
@@ -169,7 +167,7 @@ void epd_100ask_display_partial(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h
     uint8_t tmp_data[8];
 
     x_start1 = x0;//转换为字节
-    x_end1 = x0 + h-1; 
+    x_end1 = x0 + w - 1; 
 
     y_start1 = 0;
     y_start2 = y0;
@@ -180,7 +178,7 @@ void epd_100ask_display_partial(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h
     }
 
     y_end1 = 0;
-    y_end2 = y0 + w - 1;
+    y_end2 = y0 + h - 1;
     if(y_end2 >= 256)
     {
         y_end1 = y_end2 / 256;
@@ -215,6 +213,18 @@ void epd_100ask_display_partial(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h
 
     epd_send_cmd(g_spi, 0x13);          // writes New data to SRAM.
     epd_send_data(g_spi, data, ((w * h) / 8));      // show data(image)
+
+    epd_100ask_refresh(EPD_100ASK_LUT_DU);
+    vTaskDelay(500 / portTICK_RATE_MS);
+
+    /*********************************************************/	
+    //需要重新复位和初始化设置!!!!
+    /*********************************************************/	
+    epd_reset(g_spi);
+
+    tmp_data[0] = 0xD7;                 // Border
+    epd_send_cmd(g_spi, 0x50);
+    epd_send_data(g_spi, tmp_data, 1);
 }
 
 void epd_100ask_refresh(EPD_LUT_TYPE lut)
@@ -278,6 +288,8 @@ static void epd_reset(spi_device_handle_t spi)
 //Initialize the display
 static void epd_initialize(spi_device_handle_t spi)
 {
+    g_lut_flag = 0;
+  
     int cmd=0;
     const epd_init_cmd_t epd_init_cmds[]={
         /* panel setting   PSR 
@@ -299,13 +311,15 @@ static void epd_initialize(spi_device_handle_t spi)
         * BT_PHB[7:0]
         * x x BT_PHC[5:0]
         */
-        {0x06, {0x17, 0x37, 0x3D}, 3},
-        /* VCOM_DC setting    VDCS
-        * x  VDCS[6:0] VCOM_DC value= -1.9v    00~3f,0x12=-1.9v
-        */
+        {0x06, {0x37, 0x3D, 0x3D}, 3},
+        /* */
+        {0x60, {0x22}, 1},
+        /* */
         {0x82, {0x07}, 1},
         /* */
         {0x30, {0x09}, 1},
+        /* */
+        {0xe3, {0x88}, 1},
         /* resoultion setting
         * HRES[7:3] 0 0 0
         * x x x x x x x VRES[8]
@@ -313,7 +327,7 @@ static void epd_initialize(spi_device_handle_t spi)
         */
         {0x61, {0xf0, 0x01, 0x68}, 3},
         /*  */
-        {0x50, {0xD7}, 1},
+        {0x50, {0xB7}, 1},
         {0, {0}, 0xff},
     };
 
