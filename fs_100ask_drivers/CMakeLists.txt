@@ -1,5 +1,5 @@
-set(srcs "./src/fs_100ask_hal.c" "./src/internal_flash_100ask_drivers.c" "./src/lv_port_fs_fatfs.c" "./src/sd_spi_100ask_drivers.c")
-set(includes "./src")
+set(srcs "./src/fs_100ask_hal.c" "./src/lv_port_fs_fatfs.c" "./src/drivers/internal_flash_driver.c" "./src/drivers/sd_spi_driver.c")
+set(includes "./src" "./src/drivers")
 
 idf_component_register(SRCS ${srcs}
                        INCLUDE_DIRS ${includes})

@@ -9,7 +9,7 @@
 #include "esp_vfs_fat.h"
 #include "sdmmc_cmd.h"
 
-#if defined(CONFIG_LV_USE_100ASK_FS_FATFS)
+#ifdef CONFIG_LV_USE_100ASK_FS_FATFS
 
 #include "lv_port_fs_fatfs.h"
 #include "fs_100ask_hal.h"

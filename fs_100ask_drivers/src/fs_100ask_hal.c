@@ -20,9 +20,8 @@
 #include "sdmmc_cmd.h"
 
 #include "fs_100ask_hal.h"
-#include "sd_spi_100ask_drivers.h"
-#include "internal_flash_100ask_drivers.h"
-#include "internal_flash_100ask_drivers.h"
+#include "drivers/internal_flash_driver.h"
+#include "drivers/sd_spi_driver.h"
 
 #ifdef CONFIG_USE_100ASK_FS_DRIVERS
 
@@ -30,11 +29,11 @@
  *      DEFINES
  *********************/
 
-#if defined(CONFIG_USE_100ASK_EXTERNAL_SDCARD_SPI)
-  #define SPI_SD_CARD_100ASK_PIN_MOSI           CONFIG_SPI_SD_CARD_100ASK_PIN_MOSI                     /*MOSI*/
-  #define SPI_SD_CARD_100ASK_PIN_MISO           CONFIG_SPI_SD_CARD_100ASK_PIN_MISO                     /*MISO*/
-  #define SPI_SD_CARD_100ASK_PIN_CLK            CONFIG_SPI_SD_CARD_100ASK_PIN_CLK                      /*CLK*/
-  #define SPI_SD_CARD_100ASK_PIN_CS             CONFIG_SPI_SD_CARD_100ASK_PIN_CS                       /*CS*/
+#ifdef CONFIG_USE_100ASK_EXTERNAL_SDCARD_SPI
+  #define SPI_SD_CARD_100ASK_PIN_MOSI           CONFIG_SPI_SD_CARD_100ASK_PIN_MOSI            /*MOSI*/
+  #define SPI_SD_CARD_100ASK_PIN_MISO           CONFIG_SPI_SD_CARD_100ASK_PIN_MISO            /*MISO*/
+  #define SPI_SD_CARD_100ASK_PIN_CLK            CONFIG_SPI_SD_CARD_100ASK_PIN_CLK             /*CLK*/
+  #define SPI_SD_CARD_100ASK_PIN_CS             CONFIG_SPI_SD_CARD_100ASK_PIN_CS              /*CS*/
 
   #define SPI_SD_CARD_100ASK_MAX_TRANSFER_SIZE  CONFIG_SPI_SD_CARD_100ASK_MAX_TRANSFER_SIZE 
 
@@ -53,7 +52,7 @@
  **********************/
 static const char *TAG = "fs_100ask_hal";
 
-#if defined(CONFIG_USE_100ASK_EXTERNAL_SDCARD_SPI)
+#ifdef CONFIG_USE_100ASK_EXTERNAL_SDCARD_SPI
 static sdspi_100ask_driver_t storage = {
     .pin_mosi        = SPI_SD_CARD_100ASK_PIN_MOSI,
     .pin_miso        = SPI_SD_CARD_100ASK_PIN_MISO,
@@ -78,7 +77,7 @@ void fs_100ask_hal_init(void)
 #endif
 }
 
-void fs_100ask_hal_release(void)
+void fs_100ask_hal_deinit(void)
 {
 #ifdef CONFIG_USE_100ASK_INTERNAL_FLASH
   //internal_flash_100ask_unmount();

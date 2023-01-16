@@ -14,7 +14,7 @@ menu "100ASK File system drivers setting"
                 bool "Use Internal Flash"
         endchoice
 
-        config FS_DRIVERS_MOUNT_POINT
+        config FS_100ASK_MOUNT_POINT
             string "Set mount point"
             default "/disk"
 

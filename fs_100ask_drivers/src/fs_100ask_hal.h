@@ -32,7 +32,7 @@ extern "C" {
  **********************/
 void fs_100ask_hal_init(void);
 
-void fs_100ask_hal_release(void);
+void fs_100ask_hal_deinit(void);
 
 sdmmc_card_t * fs_100ask_hal_get_mount_card(void);
 
