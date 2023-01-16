@@ -17,7 +17,7 @@
 #include "esp_log.h"
 
 #include "epd_240x360_spi_driver.h"
-#include "../epd_luts/epd_240x360_luts.h"
+#include "../luts/epd_240x360_luts.h"
 
 #ifdef CONFIG_USE_100ASK_EPD_240X360
 

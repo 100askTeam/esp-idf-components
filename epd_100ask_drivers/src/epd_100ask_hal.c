@@ -17,7 +17,7 @@
 #include "esp_log.h"
 
 #include "epd_100ask_hal.h"
-#include "epd_drivers/epd_240x360_spi_driver.h"
+#include "drivers/epd_240x360_spi_driver.h"
 
 #ifdef CONFIG_USE_100ASK_EPD
 
