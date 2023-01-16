@@ -2,6 +2,16 @@ menu "100ASK EPD setting"
     menu "EPD Pin Assignments"
         depends on USE_100ASK_EPD
 
+        choice
+            bool "Select an ink screen display device"
+            default USE_100ASK_EPD_240X360
+            help
+                https://forums.100ask.net
+
+            config USE_100ASK_EPD_240X360
+                bool "EPD 240x360"
+        endchoice
+
         config EPD_100ASK_DISP_SPI_FREQUENCY
             int "Configure the display SPI frequency"
             default 25000000

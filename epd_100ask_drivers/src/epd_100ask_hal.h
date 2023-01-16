@@ -42,15 +42,15 @@ typedef enum {
  * GLOBAL PROTOTYPES
  **********************/
 
-void epd_100ask_init(void);
+void epd_100ask_hal_init(void);
 
-void epd_100ask_display_clear(uint8_t color);
+void epd_100ask_hal_display_clear(uint8_t color);
 
-void epd_100ask_display_image(const uint8_t * picData, uint16_t w, uint16_t h);
+void epd_100ask_hal_display_image(const uint8_t * data, uint16_t w, uint16_t h);
 
-void epd_100ask_display_partial(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, const uint8_t * data);
+void epd_100ask_hal_display_partial(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, const uint8_t * data);
 
-void epd_100ask_refresh(EPD_LUT_TYPE lut);
+void epd_100ask_hal_refresh(EPD_LUT_TYPE lut);
 
 
 /**********************

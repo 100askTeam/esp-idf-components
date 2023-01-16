@@ -1,5 +1,5 @@
 /**
- * @file epd_100ask_drivers.c
+ * @file epd_240x360_spi_driver.c
  *
  */
 
@@ -16,29 +16,15 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 
-#include "epd_100ask_drivers.h"
-#include "epd_100ask_luts.h"
+#include "epd_240x360_spi_driver.h"
+#include "../epd_luts/epd_240x360_luts.h"
 
-#ifdef CONFIG_USE_100ASK_EPD
+#ifdef CONFIG_USE_100ASK_EPD_240X360
 
 /*********************
  *      DEFINES
  *********************/
-#define TAG "EPD_100ASK_DRIVERS"
-
-#define EPD_100ASK_DISP_PIN_MOSI CONFIG_EPD_100ASK_DISP_PIN_MOSI /*SDI*/
-#define EPD_100ASK_DISP_PIN_MISO CONFIG_EPD_100ASK_DISP_PIN_MISO
-#define EPD_100ASK_DISP_PIN_CLK CONFIG_EPD_100ASK_DISP_PIN_CLK   /*SCLK*/
-#define EPD_100ASK_DISP_PIN_CS CONFIG_EPD_100ASK_DISP_PIN_CS     /*CS*/
-#define EPD_100ASK_DISP_PIN_DC CONFIG_EPD_100ASK_DISP_PIN_DC     /*D/C*/
-#define EPD_100ASK_DISP_PIN_RST CONFIG_EPD_100ASK_DISP_PIN_RST   /*RESET*/
-#define EPD_100ASK_DISP_PIN_BUSY CONFIG_EPD_100ASK_DISP_PIN_BUSY /*BUSY*/
-
-#define EPD_100ASK_DISP_SPI_MODE CONFIG_EPD_100ASK_DISP_SPI_MODE
-#define EPD_100ASK_DISP_SPI_FREQUENCY CONFIG_EPD_100ASK_DISP_SPI_FREQUENCY
-#define EPD_100ASK_DISP_HEIGHT CONFIG_EPD_100ASK_DISP_HEIGHT
-#define EPD_100ASK_DISP_WIDTH CONFIG_EPD_100ASK_DISP_WIDTH
-#define EPD_100ASK_DISP_SPI_QUEUE_SIZE 7
+#define TAG "EPD_100ASK_240X360_DRIVER"
 
 /**********************
  *      TYPEDEFS
@@ -71,44 +57,46 @@ static void epd_100ask_chkstatus(void);
  *  STATIC VARIABLES
  **********************/
 static int g_lut_flag;
-static spi_device_handle_t g_spi;
+//static spi_device_handle_t spi;
 static QueueHandle_t TransactionPool = NULL;
+static epd_240x360_driver_t *g_epd_t;
 
 /**********************
  *   GLOBAL FUNCTIONS
  **********************/
 // Initialize the display
-void epd_100ask_init(void)
+void epd_240x360_init(epd_240x360_driver_t * epd_driver)
 {
+  g_epd_t = epd_driver;
   esp_err_t ret;
   spi_bus_config_t buscfg = {
       .miso_io_num = -1,
-      .mosi_io_num = EPD_100ASK_DISP_PIN_MOSI,
-      .sclk_io_num = EPD_100ASK_DISP_PIN_CLK,
+      .mosi_io_num = g_epd_t->pin_miso, //EPD_100ASK_DISP_PIN_MOSI,
+      .sclk_io_num = g_epd_t->pin_sck,
       .quadwp_io_num = -1,
       .quadhd_io_num = -1,
-      .max_transfer_sz = (EPD_100ASK_DISP_WIDTH * EPD_100ASK_DISP_HEIGHT) / 8};
+      .max_transfer_sz = (g_epd_t->width * g_epd_t->height) / 8};
   spi_device_interface_config_t devcfg = {
       //.clock_speed_hz=EPD_100ASK_DISP_SPI_FREQUENCY,    //Clock out at 25 MHz
-      .clock_speed_hz = 25000000,                   // Clock out at 25 MHz
-      .mode = EPD_100ASK_DISP_SPI_MODE,             // SPI mode 0
-      .spics_io_num = EPD_100ASK_DISP_PIN_CS,       // CS pin
-      .queue_size = EPD_100ASK_DISP_SPI_QUEUE_SIZE, // We want to be able to queue 7 transactions at a time
+      .clock_speed_hz = g_epd_t->spi_clock_speed_hz,                   // Clock out at 25 MHz
+      .mode = g_epd_t->spi_mode,             // SPI mode 0
+      .spics_io_num = g_epd_t->pin_cs,       // CS pin
+      .queue_size = g_epd_t->spi_queue_size, // We want to be able to queue 7 transactions at a time
       .pre_cb = epd_spi_pre_transfer_callback,      // Specify pre-transfer callback to handle D/C line
   };
   // Initialize the SPI bus
-  ret = spi_bus_initialize(SPI2_HOST, &buscfg, (spi_dma_chan_t)SPI_DMA_CH_AUTO);
+  ret = spi_bus_initialize(g_epd_t->spi_host, &buscfg, (spi_dma_chan_t)SPI_DMA_CH_AUTO);
   ESP_ERROR_CHECK(ret);
   // Attach the LCD to the SPI bus
-  ret = spi_bus_add_device(SPI2_HOST, &devcfg, &g_spi);
+  ret = spi_bus_add_device(g_epd_t->spi_host, &devcfg, &(g_epd_t->spi));
   ESP_ERROR_CHECK(ret);
 
   /* create the transaction pool and fill it with ptrs to spi_transaction_ext_t to reuse */
   if (TransactionPool == NULL)
   {
-    TransactionPool = xQueueCreate(EPD_100ASK_DISP_SPI_QUEUE_SIZE, sizeof(spi_transaction_ext_t *));
+    TransactionPool = xQueueCreate(g_epd_t->spi_queue_size, sizeof(spi_transaction_ext_t *));
     assert(TransactionPool != NULL);
-    for (size_t i = 0; i < EPD_100ASK_DISP_SPI_QUEUE_SIZE; i++)
+    for (size_t i = 0; i < g_epd_t->spi_queue_size; i++)
     {
       spi_transaction_ext_t *pTransaction = (spi_transaction_ext_t *)heap_caps_malloc(sizeof(spi_transaction_ext_t), MALLOC_CAP_DMA);
       assert(pTransaction != NULL);
@@ -118,47 +106,54 @@ void epd_100ask_init(void)
   }
 
   // Initialize non-SPI GPIOs
-  gpio_reset_pin(EPD_100ASK_DISP_PIN_BUSY);
-  gpio_reset_pin(EPD_100ASK_DISP_PIN_RST);
-  gpio_reset_pin(EPD_100ASK_DISP_PIN_DC);
-  gpio_set_direction(EPD_100ASK_DISP_PIN_BUSY, GPIO_MODE_INPUT);
-  gpio_set_direction(EPD_100ASK_DISP_PIN_RST, GPIO_MODE_OUTPUT);
-  gpio_set_direction(EPD_100ASK_DISP_PIN_DC, GPIO_MODE_OUTPUT);
+  gpio_reset_pin(g_epd_t->pin_busy);
+  gpio_reset_pin(g_epd_t->pin_reset);
+  gpio_reset_pin(g_epd_t->pin_dc);
+  gpio_set_direction(g_epd_t->pin_busy, GPIO_MODE_INPUT);
+  gpio_set_direction(g_epd_t->pin_reset, GPIO_MODE_OUTPUT);
+  gpio_set_direction(g_epd_t->pin_dc, GPIO_MODE_OUTPUT);
 
   // Initialize the EPD
-  epd_initialize(g_spi);
+  epd_initialize(g_epd_t->spi);
 
   ESP_LOGI(TAG, "Initialized successfully!");
 }
 
-void epd_100ask_display_clear(uint8_t color)
+
+void epd_240x360_deinit(void)
 {
-  uint8_t *tmp_data = (uint8_t *)malloc(((EPD_100ASK_DISP_HEIGHT) * (EPD_100ASK_DISP_WIDTH) / 8) * sizeof(uint8_t));
+  spi_bus_remove_device(g_epd_t->spi);
+}
 
-  memset(tmp_data, color, ((EPD_100ASK_DISP_HEIGHT) * (EPD_100ASK_DISP_WIDTH) / 8));
 
-  epd_send_cmd(g_spi, 0x10);
-  epd_send_data(g_spi, tmp_data, (((EPD_100ASK_DISP_HEIGHT) * (EPD_100ASK_DISP_WIDTH)) / 8));
+void epd_240x360_display_clear(uint8_t color)
+{
+  uint8_t *tmp_data = (uint8_t *)malloc(((g_epd_t->height) * (g_epd_t->width) / 8) * sizeof(uint8_t));
 
-  epd_send_cmd(g_spi, 0x13);
-  epd_send_data(g_spi, tmp_data, (((EPD_100ASK_DISP_HEIGHT) * (EPD_100ASK_DISP_WIDTH)) / 8));
+  memset(tmp_data, color, ((g_epd_t->height) * (g_epd_t->width) / 8));
+
+  epd_send_cmd(g_epd_t->spi, 0x10);
+  epd_send_data(g_epd_t->spi, tmp_data, (((g_epd_t->height) * (g_epd_t->width)) / 8));
+
+  epd_send_cmd(g_epd_t->spi, 0x13);
+  epd_send_data(g_epd_t->spi, tmp_data, (((g_epd_t->height) * (g_epd_t->width)) / 8));
 
   free(tmp_data);
 }
 
-void epd_100ask_display_image(const uint8_t *picData, uint16_t w, uint16_t h)
+void epd_240x360_display_image(const uint8_t *picData, uint16_t w, uint16_t h)
 {
-  if (w > EPD_100ASK_DISP_HEIGHT)
-    w = EPD_100ASK_DISP_HEIGHT;
-  if (h > EPD_100ASK_DISP_HEIGHT)
-    h = EPD_100ASK_DISP_HEIGHT;
+  if (w > g_epd_t->height)
+    w = g_epd_t->height;
+  if (h > g_epd_t->height)
+    h = g_epd_t->height;
 
-  epd_send_cmd(g_spi, 0x13);
-  epd_send_data(g_spi, picData, (w * h / 8));
+  epd_send_cmd(g_epd_t->spi, 0x13);
+  epd_send_data(g_epd_t->spi, picData, (w * h / 8));
 }
 
 // partial display
-void epd_100ask_display_partial(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, const uint8_t *data)
+void epd_240x360_display_partial(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, const uint8_t *data)
 {
   uint16_t x_start1, x_end1, y_start1, y_start2, y_end1, y_end2;
   uint8_t tmp_data[8];
@@ -185,17 +180,17 @@ void epd_100ask_display_partial(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h
   /*********************************************************/
   // 需要重新复位和初始化设置!!!!
   /*********************************************************/
-  epd_reset(g_spi);
+  epd_reset(g_epd_t->spi);
 
   tmp_data[0] = 0xF7; // Border
-  epd_send_cmd(g_spi, 0x50);
-  epd_send_data(g_spi, tmp_data, 1);
+  epd_send_cmd(g_epd_t->spi, 0x50);
+  epd_send_data(g_epd_t->spi, tmp_data, 1);
 
   /*********************************************************/
   tmp_data[0] = 0xFF;        // RES1 RES0 REG KW/R     UD    SHL   SHD_N  RST_N
   tmp_data[1] = 0x01;        // x x x VCMZ TS_AUTO TIGE NORG VC_LUTZ
-  epd_send_cmd(g_spi, 0x00); // panel setting   PSR
-  epd_send_data(g_spi, tmp_data, 2);
+  epd_send_cmd(g_epd_t->spi, 0x00); // panel setting   PSR
+  epd_send_data(g_epd_t->spi, tmp_data, 2);
 
   tmp_data[0] = x_start1; // x-start
   tmp_data[1] = x_end1;   // x-end
@@ -204,48 +199,48 @@ void epd_100ask_display_partial(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h
   tmp_data[4] = y_end1;
   tmp_data[5] = y_end2; // y-end
   tmp_data[6] = 0x01;
-  epd_send_cmd(g_spi, 0x91); // This command makes the display enter partial mode
-  epd_send_cmd(g_spi, 0x90); // resolution setting
-  epd_send_data(g_spi, tmp_data, 7);
+  epd_send_cmd(g_epd_t->spi, 0x91); // This command makes the display enter partial mode
+  epd_send_cmd(g_epd_t->spi, 0x90); // resolution setting
+  epd_send_data(g_epd_t->spi, tmp_data, 7);
 
-  epd_send_cmd(g_spi, 0x13);                 // writes New data to SRAM.
-  epd_send_data(g_spi, data, ((w * h) / 8)); // show data(image)
+  epd_send_cmd(g_epd_t->spi, 0x13);                 // writes New data to SRAM.
+  epd_send_data(g_epd_t->spi, data, ((w * h) / 8)); // show data(image)
 
-  epd_100ask_refresh(EPD_100ASK_LUT_DU);
+  epd_240x360_refresh(EPD_240X360_LUT_DU);
   vTaskDelay(500 / portTICK_RATE_MS);
 
   /*********************************************************/
   // 需要重新复位和初始化设置!!!!
   /*********************************************************/
-  epd_reset(g_spi);
+  epd_reset(g_epd_t->spi);
 
   tmp_data[0] = 0xD7; // Border
-  epd_send_cmd(g_spi, 0x50);
-  epd_send_data(g_spi, tmp_data, 1);
+  epd_send_cmd(g_epd_t->spi, 0x50);
+  epd_send_data(g_epd_t->spi, tmp_data, 1);
 }
 
-void epd_100ask_refresh(EPD_LUT_TYPE lut)
+void epd_240x360_refresh(EPD_240X360_LUT_TYPE lut)
 {
   uint8_t tmp_data[1];
   switch (lut)
   {
-  case EPD_100ASK_LUT_GC:
+  case EPD_240x360_LUT_GC:
     epd_100ask_lutGC();
 
     // DISPLAY REFRESH
     tmp_data[0] = 0xA5;
-    epd_send_cmd(g_spi, 0x17);
-    epd_send_data(g_spi, tmp_data, 1);
+    epd_send_cmd(g_epd_t->spi, 0x17);
+    epd_send_data(g_epd_t->spi, tmp_data, 1);
     break;
-  case EPD_100ASK_LUT_DU:
+  case EPD_240X360_LUT_DU:
     epd_100ask_lutDU();
 
     // DISPLAY REFRESH
     tmp_data[0] = 0xA5;
-    epd_send_cmd(g_spi, 0x17);
-    epd_send_data(g_spi, tmp_data, 1);
+    epd_send_cmd(g_epd_t->spi, 0x17);
+    epd_send_data(g_epd_t->spi, tmp_data, 1);
     break;
-  case EPD_100ASK_LUT_5S:
+  case EPD_240X360_LUT_5S:
     epd_100ask_lut5S();
     break;
 
@@ -316,11 +311,11 @@ static void epd_initialize(spi_device_handle_t spi)
   };
 
   // Reset the display
-  gpio_set_level(EPD_100ASK_DISP_PIN_RST, 1);
+  gpio_set_level(g_epd_t->pin_reset, 1);
   vTaskDelay(20 / portTICK_RATE_MS);
-  gpio_set_level(EPD_100ASK_DISP_PIN_RST, 0);
+  gpio_set_level(g_epd_t->pin_reset, 0);
   vTaskDelay(20 / portTICK_RATE_MS);
-  gpio_set_level(EPD_100ASK_DISP_PIN_RST, 1);
+  gpio_set_level(g_epd_t->pin_reset, 1);
   vTaskDelay(20 / portTICK_RATE_MS);
 
   // Send all the commands
@@ -349,7 +344,7 @@ static void epd_send_cmd(spi_device_handle_t spi, const uint8_t cmd)
   spi_transaction_t t;
   spi_transaction_t *presult;
 
-  while (uxQueueMessagesWaiting(TransactionPool) < EPD_100ASK_DISP_SPI_QUEUE_SIZE)
+  while (uxQueueMessagesWaiting(TransactionPool) < g_epd_t->spi_queue_size)
   { /* service until the transaction reuse pool is full again */
     if (spi_device_get_trans_result(spi, &presult, 1) == ESP_OK)
     {
@@ -357,7 +352,7 @@ static void epd_send_cmd(spi_device_handle_t spi, const uint8_t cmd)
     }
   }
 
-  // gpio_set_level(EPD_100ASK_DISP_PIN_DC, 0);	 /*Command mode*/
+  // gpio_set_level(g_epd_t->pin_dc, 0);	 /*Command mode*/
 
   memset(&t, 0, sizeof(t));                   // Zero out the transaction
   t.length = 8;                               // Command is 8 bits
@@ -383,7 +378,7 @@ static void epd_send_data(spi_device_handle_t spi, const uint8_t *data, int len)
   if (len == 0)
     return; // no need to send anything
 
-  while (uxQueueMessagesWaiting(TransactionPool) < EPD_100ASK_DISP_SPI_QUEUE_SIZE)
+  while (uxQueueMessagesWaiting(TransactionPool) < g_epd_t->spi_queue_size)
   { /* service until the transaction reuse pool is full again */
     if (spi_device_get_trans_result(spi, &presult, 1) == ESP_OK)
     {
@@ -404,12 +399,12 @@ static void epd_send_data(spi_device_handle_t spi, const uint8_t *data, int len)
 static void epd_spi_pre_transfer_callback(spi_transaction_t *t)
 {
   int dc = (int)t->user;
-  gpio_set_level(EPD_100ASK_DISP_PIN_DC, dc);
+  gpio_set_level(g_epd_t->pin_dc, dc);
 }
 
 static void epd_100ask_chkstatus(void)
 {
-  while (0 == gpio_get_level(EPD_100ASK_DISP_PIN_BUSY))
+  while (0 == gpio_get_level(g_epd_t->pin_busy))
     vTaskDelay(10 / portTICK_RATE_MS);
 }
 
@@ -417,38 +412,38 @@ static void epd_100ask_chkstatus(void)
 static void epd_100ask_lut5S(void)
 {
   // vcom
-  epd_send_cmd(g_spi, 0x20);
-  epd_send_data(g_spi, lut_vcom, sizeof(lut_vcom));
+  epd_send_cmd(g_epd_t->spi, 0x20);
+  epd_send_data(g_epd_t->spi, epd_240x360_lut_vcom, sizeof(epd_240x360_lut_vcom));
 
   // red not use
-  epd_send_cmd(g_spi, 0x21);
-  epd_send_data(g_spi, lut_ww, sizeof(lut_ww));
+  epd_send_cmd(g_epd_t->spi, 0x21);
+  epd_send_data(g_epd_t->spi, epd_240x360_lut_ww, sizeof(epd_240x360_lut_ww));
 
   // wb w
-  epd_send_cmd(g_spi, 0x24);
-  epd_send_data(g_spi, lut_bb, sizeof(lut_bb));
+  epd_send_cmd(g_epd_t->spi, 0x24);
+  epd_send_data(g_epd_t->spi, epd_240x360_lut_bb, sizeof(epd_240x360_lut_bb));
 
   if (g_lut_flag == 0)
   {
     // bb b
-    epd_send_cmd(g_spi, 0x22);
-    epd_send_data(g_spi, lut_bw, sizeof(lut_bw));
+    epd_send_cmd(g_epd_t->spi, 0x22);
+    epd_send_data(g_epd_t->spi, epd_240x360_lut_bw, sizeof(epd_240x360_lut_bw));
 
     // bw r
-    epd_send_cmd(g_spi, 0x23);
-    epd_send_data(g_spi, lut_wb, sizeof(lut_wb));
+    epd_send_cmd(g_epd_t->spi, 0x23);
+    epd_send_data(g_epd_t->spi, epd_240x360_lut_wb, sizeof(epd_240x360_lut_wb));
 
     g_lut_flag = 1;
   }
   else
   {
     // bb b
-    epd_send_cmd(g_spi, 0x23);
-    epd_send_data(g_spi, lut_bw, sizeof(lut_bw));
+    epd_send_cmd(g_epd_t->spi, 0x23);
+    epd_send_data(g_epd_t->spi, epd_240x360_lut_bw, sizeof(epd_240x360_lut_bw));
 
     // bw r
-    epd_send_cmd(g_spi, 0x22);
-    epd_send_data(g_spi, lut_wb, sizeof(lut_wb));
+    epd_send_cmd(g_epd_t->spi, 0x22);
+    epd_send_data(g_epd_t->spi, epd_240x360_lut_wb, sizeof(epd_240x360_lut_wb));
 
     g_lut_flag = 0;
   }
@@ -457,37 +452,37 @@ static void epd_100ask_lut5S(void)
 // LUT download
 static void epd_100ask_lutGC(void)
 {
-  epd_send_cmd(g_spi, 0x20);
-  epd_send_data(g_spi, lut_R20_GC, sizeof(lut_R20_GC));
+  epd_send_cmd(g_epd_t->spi, 0x20);
+  epd_send_data(g_epd_t->spi, epd_240x360_lut_R20_GC, sizeof(epd_240x360_lut_R20_GC));
 
   // red not use
-  epd_send_cmd(g_spi, 0x21);
-  epd_send_data(g_spi, lut_R21_GC, sizeof(lut_R21_GC));
+  epd_send_cmd(g_epd_t->spi, 0x21);
+  epd_send_data(g_epd_t->spi, epd_240x360_lut_R21_GC, sizeof(epd_240x360_lut_R21_GC));
 
   // bb b
-  epd_send_cmd(g_spi, 0x24);
-  epd_send_data(g_spi, lut_R24_GC, sizeof(lut_R24_GC));
+  epd_send_cmd(g_epd_t->spi, 0x24);
+  epd_send_data(g_epd_t->spi, epd_240x360_lut_R24_GC, sizeof(epd_240x360_lut_R24_GC));
 
   if (g_lut_flag == 0)
   {
     // bw r
-    epd_send_cmd(g_spi, 0x22);
-    epd_send_data(g_spi, lut_R22_GC, sizeof(lut_R22_GC));
+    epd_send_cmd(g_epd_t->spi, 0x22);
+    epd_send_data(g_epd_t->spi, epd_240x360_lut_R22_GC, sizeof(epd_240x360_lut_R22_GC));
 
     // wb w
-    epd_send_cmd(g_spi, 0x23);
-    epd_send_data(g_spi, lut_R23_GC, sizeof(lut_R23_GC));
+    epd_send_cmd(g_epd_t->spi, 0x23);
+    epd_send_data(g_epd_t->spi, epd_240x360_lut_R23_GC, sizeof(epd_240x360_lut_R23_GC));
     g_lut_flag = 1;
   }
   else
   {
     // bw r
-    epd_send_cmd(g_spi, 0x22);
-    epd_send_data(g_spi, lut_R23_GC, sizeof(lut_R23_GC));
+    epd_send_cmd(g_epd_t->spi, 0x22);
+    epd_send_data(g_epd_t->spi, epd_240x360_lut_R23_GC, sizeof(epd_240x360_lut_R23_GC));
 
     // wb w
-    epd_send_cmd(g_spi, 0x23);
-    epd_send_data(g_spi, lut_R22_GC, sizeof(lut_R22_GC));
+    epd_send_cmd(g_epd_t->spi, 0x23);
+    epd_send_data(g_epd_t->spi, epd_240x360_lut_R22_GC, sizeof(epd_240x360_lut_R22_GC));
     g_lut_flag = 0;
   }
 }
@@ -496,37 +491,37 @@ static void epd_100ask_lutGC(void)
 static void epd_100ask_lutDU(void)
 {
   // vcom
-  epd_send_cmd(g_spi, 0x20);
-  epd_send_data(g_spi, lut_R20_DU, sizeof(lut_R20_DU));
+  epd_send_cmd(g_epd_t->spi, 0x20);
+  epd_send_data(g_epd_t->spi, epd_240x360_lut_R20_DU, sizeof(epd_240x360_lut_R20_DU));
 
   // red not use
-  epd_send_cmd(g_spi, 0x21);
-  epd_send_data(g_spi, lut_R21_DU, sizeof(lut_R21_DU));
+  epd_send_cmd(g_epd_t->spi, 0x21);
+  epd_send_data(g_epd_t->spi, epd_240x360_lut_R21_DU, sizeof(epd_240x360_lut_R21_DU));
 
   // bb b
-  epd_send_cmd(g_spi, 0x24);
-  epd_send_data(g_spi, lut_R24_DU, sizeof(lut_R24_DU));
+  epd_send_cmd(g_epd_t->spi, 0x24);
+  epd_send_data(g_epd_t->spi, epd_240x360_lut_R24_DU, sizeof(epd_240x360_lut_R24_DU));
 
   if (g_lut_flag == 0)
   {
     // bw r
-    epd_send_cmd(g_spi, 0x22);
-    epd_send_data(g_spi, lut_R22_DU, sizeof(lut_R22_DU));
+    epd_send_cmd(g_epd_t->spi, 0x22);
+    epd_send_data(g_epd_t->spi, epd_240x360_lut_R22_DU, sizeof(epd_240x360_lut_R22_DU));
 
     // wb w
-    epd_send_cmd(g_spi, 0x23);
-    epd_send_data(g_spi, lut_R23_DU, sizeof(lut_R23_DU));
+    epd_send_cmd(g_epd_t->spi, 0x23);
+    epd_send_data(g_epd_t->spi, epd_240x360_lut_R23_DU, sizeof(epd_240x360_lut_R23_DU));
     g_lut_flag = 1;
   }
   else
   {
     // bw r
-    epd_send_cmd(g_spi, 0x22);
-    epd_send_data(g_spi, lut_R23_DU, sizeof(lut_R23_DU));
+    epd_send_cmd(g_epd_t->spi, 0x22);
+    epd_send_data(g_epd_t->spi, epd_240x360_lut_R23_DU, sizeof(epd_240x360_lut_R23_DU));
 
     // wb w
-    epd_send_cmd(g_spi, 0x23);
-    epd_send_data(g_spi, lut_R22_DU, sizeof(lut_R22_DU));
+    epd_send_cmd(g_epd_t->spi, 0x23);
+    epd_send_data(g_epd_t->spi, epd_240x360_lut_R22_DU, sizeof(epd_240x360_lut_R22_DU));
     g_lut_flag = 0;
   }
 }
