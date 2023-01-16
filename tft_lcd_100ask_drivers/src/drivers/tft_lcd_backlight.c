@@ -6,7 +6,7 @@
 /*********************
  *      INCLUDES
  *********************/
-#include "tft_lcd_100ask_backlight.h"
+#include "tft_lcd_backlight.h"
 #include "driver/ledc.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
@@ -17,7 +17,7 @@ typedef struct {
     int index;        // Either GPIO or LEDC channel
 } tft_lcd_100ask_backlight_t;
 
-static const char *TAG = "tft_lcd_100ask_backlight";
+static const char *TAG = "TFT_LCD_BACKLIGHT";
 
 tft_lcd_100ask_backlight_h tft_lcd_100ask_backlight_new(const tft_lcd_100ask_backlight_config_t *config)
 {

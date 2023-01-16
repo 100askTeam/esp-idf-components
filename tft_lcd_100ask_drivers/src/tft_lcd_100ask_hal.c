@@ -1,5 +1,5 @@
 /**
- * @file tft_lcd_100ask_drivers.c
+ * @file tft_lcd_100ask_hal.c
  *
  */
 
@@ -16,33 +16,33 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 
-#include "tft_lcd_100ask_drivers.h"
-#include "tft_lcd_100ask_backlight.h"
-#include "st7796s.h"
+#include "tft_lcd_100ask_hal.h"
+#include "drivers/tft_lcd_backlight.h"
+#include "drivers/tft_lcd_320x480.h"
 
 #ifdef CONFIG_USE_100ASK_SPI_TFT_LCD
 
 /*********************
  *      DEFINES
  *********************/
-#define TAG "TFT_LCD_DRIVERS"
+#define TAG "TFT_LCD_HAL"
 
-#define LINE_BUFFERS (2)
-#define LINE_COUNT   (20)
+#define LINE_BUFFERS        (2)
+#define LINE_COUNT          (20)
 
-#define GBC_FRAME_WIDTH  160 
-#define GBC_FRAME_HEIGHT 144
+#define GBC_FRAME_WIDTH     (160)
+#define GBC_FRAME_HEIGHT    (144)
 
-#define NES_FRAME_WIDTH 256
-#define NES_FRAME_HEIGHT 240
+#define NES_FRAME_WIDTH     (256)
+#define NES_FRAME_HEIGHT    (240)
 
-#define SMS_FRAME_WIDTH 256
-#define SMS_FRAME_HEIGHT 192
+#define SMS_FRAME_WIDTH     (256)
+#define SMS_FRAME_HEIGHT    (192)
 
-#define GG_FRAME_WIDTH 160
-#define GG_FRAME_HEIGHT 144
+#define GG_FRAME_WIDTH      (160)
+#define GG_FRAME_HEIGHT     (144)
 
-#define PIXEL_MASK (0x1F) 
+#define PIXEL_MASK          (0x1F) 
 
 /**********************
  *      TYPEDEFS
@@ -57,8 +57,8 @@
  **********************/
 uint16_t *line[LINE_BUFFERS];
 
-#if defined(CONFIG_USE_100ASK_SPI_TFT_LCD_ST7796S)
-static ST7796S_driver_t display = {
+#ifdef CONFIG_USE_100ASK_SPI_TFT_LCD_320X480
+static TFT_LCD_320X480_driver_t g_display_t = {
 		.pin_reset      = SPI_TFT_LCD_100ASK_DISP_PIN_RST,
 		.pin_dc         = SPI_TFT_LCD_100ASK_DISP_PIN_DC,
 		.pin_mosi       = SPI_TFT_LCD_100ASK_DISP_PIN_MOSI,
@@ -69,6 +69,8 @@ static ST7796S_driver_t display = {
 		.display_height = SCR_HEIGHT,
 		.buffer_size    = SCR_WIDTH * 20, // 2 buffers with 20 lines
 	};
+#else
+  #error "No device LCD defined!"
 #endif
 
 // We still use menuconfig for these settings
@@ -92,9 +94,11 @@ static const tft_lcd_100ask_backlight_config_t bckl_config = {
  *   GLOBAL FUNCTIONS
  **********************/
 //Initialize the display
-void * tft_lcd_100ask_drivers_init(void)
+void * tft_lcd_100ask_hal_init(void)
 {
-    ST7796S_init(&display);
+#ifdef CONFIG_USE_100ASK_SPI_TFT_LCD_320X480
+    TFT_LCD_320X480_init(&g_display_t);
+#endif
 
     tft_lcd_100ask_backlight_h bckl_handle = tft_lcd_100ask_backlight_new(&bckl_config);
     tft_lcd_100ask_backlight_set(bckl_handle, 100);
@@ -104,36 +108,40 @@ void * tft_lcd_100ask_drivers_init(void)
 
 
 // LVGL library releated functions
-void tft_lcd_100ask_display_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_map){
+void tft_lcd_100ask_hal_display_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_map){
 
     uint32_t size = lv_area_get_width(area) * lv_area_get_height(area);
 
-    //Set the area to print on the screen
-    ST7796S_set_window(&display,area->x1,area->y1,area->x2 ,area->y2);
-
     //Save the buffer data and the size of the data to send
-    display.current_buffer = (void *)color_map;
-    display.buffer_size = size;
+    g_display_t.current_buffer = (void *)color_map;
+    g_display_t.buffer_size = size;
+
+#ifdef CONFIG_USE_100ASK_SPI_TFT_LCD_320X480
+    //Set the area to print on the screen
+    TFT_LCD_320X480_set_window(&g_display_t,area->x1,area->y1,area->x2 ,area->y2);
 
     //Send it
-    //ST7796S_write_pixels(&display, display.current_buffer, display.buffer_size);
-    ST7796S_swap_buffers(&display);
+    //TFT_LCD_write_pixels(&g_display_t, g_display_t.current_buffer, g_display_t.buffer_size);
+    TFT_LCD_320X480_swap_buffers(&g_display_t);
+#endif
 
     //Tell to LVGL that is ready to send another frame
     lv_disp_flush_ready(drv);
 }
 
-void tft_lcd_100ask_clear(uint16_t color){
-    ST7796S_fill_area(&display, color, 0, 0, display.display_width, display.display_height);
+void tft_lcd_100ask_hal_clear(uint16_t color){
+#ifdef CONFIG_USE_100ASK_SPI_TFT_LCD_320X480
+    TFT_LCD_320X480_fill_area(&g_display_t, color, 0, 0, g_display_t.display_width, g_display_t.display_height);
+#endif
 }
 
 // Boot Screen Functions
-uint16_t * tft_lcd_100ask_get_buffer(){
-    return display.current_buffer;
+uint16_t * tft_lcd_100ask_hal_get_buffer(){
+    return g_display_t.current_buffer;
 }
 
-size_t tft_lcd_100ask_get_buffer_size(){
-    return display.buffer_size;
+size_t tft_lcd_100ask_hal_get_buffer_size(){
+    return g_display_t.buffer_size;
 }
 
 

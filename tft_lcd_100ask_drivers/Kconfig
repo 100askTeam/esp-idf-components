@@ -4,12 +4,14 @@ menu "100ASK SPI TFT LCD setting"
 
         choice
             bool "Select a display controller model"
-            default USE_100ASK_SPI_TFT_LCD_ST7796S
+            default USE_100ASK_SPI_TFT_LCD_320X480
             help
                 Default display controller model
 
-            config USE_100ASK_SPI_TFT_LCD_ST7796S
-                bool "ST7796S"
+            config USE_100ASK_SPI_TFT_LCD_320X480
+                bool "320X480"
+                help
+                    https://forums.100ask.net
         endchoice
 
         config SPI_TFT_LCD_100ASK_DISP_WIDTH
