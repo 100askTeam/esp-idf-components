@@ -153,134 +153,78 @@ typedef struct TFT_LCD_320X480_command {
 	const uint8_t *data;
 } TFT_LCD_320X480_command_t;
 
+typedef enum
+{
+    TFT_LCD_320X480_ROTATION_0 = 0,
+    TFT_LCD_320X480_ROTATION_90,
+    TFT_LCD_320X480_ROTATION_180,
+    TFT_LCD_320X480_ROTATION_270,
+} TFT_LCD_320X480_rotation_t;
 
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
 
-/*
- * Function:  TFT_LCD_320X480_init 
- * --------------------
- * 
+/**
  * Initialize the SPI peripheral and send the initialization sequence.
- * 
- * Arguments:
- * 	-driver: Screen driver structure.
- * 
- * Returns: True if the initialization suceed otherwise false.
- * 
+ * @param driver Screen driver structure.
+ * @return True if the initialization suceed otherwise false.
  */
 bool TFT_LCD_320X480_init(TFT_LCD_320X480_driver_t *driver);
 
-/*
- * Function:  TFT_LCD_320X480_reset
- * --------------------
- * 
- * Reset the display
- * 
- * Arguments:
- * 	-driver: Screen driver structure.
- * 
- * Returns: Nothing.
- * 
- */
-void TFT_LCD_320X480_reset(TFT_LCD_320X480_driver_t *driver);
-
-/*
- * Function:  TFT_LCD_320X480_fill_area
- * --------------------
- * 
+/**
  * Fill a area of the display with a selected color
- * 
- * Arguments:
- * 	-driver: Screen driver structure.
- * 	-color: 16 Bit hexadecimal color to fill the area.
- * 	-start_x: Start point on the X axis.
- * 	-start_y: Start point on the Y axis.
- * 	-width: Width of the area to be fill.
- * 	-height: Height of the area to be fill.
- * 
- * Returns: Nothing.
- * 
+ * @param driver Screen driver structure.
+ * @param color 16 Bit hexadecimal color to fill the area.
+ * @param start_x Start point on the X axis.
+ * @param start_y Start point on the Y axis.
+ * @param width Width of the area to be fill.
+ * @param height Height of the area to be fill.
  */
 void TFT_LCD_320X480_fill_area(TFT_LCD_320X480_driver_t *driver, TFT_LCD_320X480_color_t color, uint16_t start_x, uint16_t start_y, uint16_t width, uint16_t height);
 
-/*
- * Function:  TFT_LCD_320X480_write_pixels 
- * --------------------
- * 
+/**
  * WIP
- * 
- * Arguments:
- * 	-driver: Screen driver structure.
- * 
- * Returns: Nothing.
- * 
+ * @param driver Screen driver structure.
  */
 void TFT_LCD_320X480_write_pixels(TFT_LCD_320X480_driver_t *driver, TFT_LCD_320X480_color_t *pixels, size_t length);
 
-/*
- * Function:  TFT_LCD_320X480_write_lines 
- * --------------------
- * 
+/**
  * WIP
- * 
- * Arguments:
- * 	-driver: Screen driver structure.
- * 
- * Returns: Nothing.
- * 
+ * @param driver Screen driver structure.
  */
 void TFT_LCD_320X480_write_lines(TFT_LCD_320X480_driver_t *driver, int ypos, int xpos, int width, uint16_t *linedata, int lineCount);
 
-/*
- * Function:  TFT_LCD_320X480_swap_buffers 
- * --------------------
- * 
+/**
  * The driver has two buffer, to allow send and render the image at the same type. This function
  * send the data of the actived buffer and change the pointer of current buffer to the next one.
- * 
- * Arguments:
- * 	-driver: Screen driver structure.
- * 
- * Returns: Nothing.
- * 
+ * @param driver Screen driver structure.
  */
 void TFT_LCD_320X480_swap_buffers(TFT_LCD_320X480_driver_t *driver);
 
-/*
- * Function:  TFT_LCD_320X480_set_window
- * --------------------
- * 
+/**
  * This screen allows partial update of the screen, so we can specified which part of the windows is going to change.
- * 
- * Arguments:
- * 	-driver: Screen driver structure.
- * 	-start_x: X axis start point of the refresh zone.
- * 	-start_y: Y axis start point of the refresh zone. 
- *	-end_x: X axis end point of the refresh zone. 
- *	-end_y: Y axis end point of the refresh zone. 
-
- * Returns: Nothing.
- * 
+ * @param driver Screen driver structure.
+ * @param start_x X axis start point of the refresh zone.
+ * @param start_y Y axis start point of the refresh zone. 
+ * @param end_x X axis end point of the refresh zone. 
+ * @param end_y Y axis end point of the refresh zone. 
  */
 void TFT_LCD_320X480_set_window(TFT_LCD_320X480_driver_t *driver, uint16_t start_x, uint16_t start_y, uint16_t end_x, uint16_t end_y);
 
-/*
- * Function:  TFT_LCD_320X480_set_endian 
- * --------------------
- * 
- * Depper explanation on the display_HAL.h file, but this function change the screen configuration from,
+/**
+ * Depper explanation on the *hal.h file, but this function change the screen configuration from,
  * little endian message to big endian message.
- * 
- * Arguments:
- * 	-driver: Screen driver structure.
- * 
- * Returns: Nothing.
- * 
+ * @param driver Screen driver structure.
  */
-
 void TFT_LCD_320X480_set_endian(TFT_LCD_320X480_driver_t *driver);
+
+/**
+ * Set screen rotation angle
+ * @param driver Screen driver structure.
+ * @param rotation The rotation angles you can choose are: 90, 180, 270.
+ */
+void TFT_LCD_320X480_set_rotation(TFT_LCD_320X480_driver_t *driver, TFT_LCD_320X480_rotation_t rotation);
 
 /**********************
  *      MACROS

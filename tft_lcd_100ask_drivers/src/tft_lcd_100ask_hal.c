@@ -135,12 +135,17 @@ void tft_lcd_100ask_hal_clear(uint16_t color){
 #endif
 }
 
+void tft_lcd_100ask_hal_set_rotation(tft_lcd_100ask_rotation_t rotation)
+{
+    TFT_LCD_320X480_set_rotation(&g_display_t, rotation);
+}
+
 // Boot Screen Functions
-uint16_t * tft_lcd_100ask_hal_get_buffer(){
+uint16_t * tft_lcd_100ask_hal_get_buffer(void){
     return g_display_t.current_buffer;
 }
 
-size_t tft_lcd_100ask_hal_get_buffer_size(){
+size_t tft_lcd_100ask_hal_get_buffer_size(void){
     return g_display_t.buffer_size;
 }
 

@@ -3,7 +3,7 @@ menu "100ASK SPI TFT LCD setting"
         depends on USE_100ASK_SPI_TFT_LCD
 
         choice
-            bool "Select a display controller model"
+            bool "Select the model of the display"
             default USE_100ASK_SPI_TFT_LCD_320X480
             help
                 Default display controller model
@@ -13,6 +13,13 @@ menu "100ASK SPI TFT LCD setting"
                 help
                     https://forums.100ask.net
         endchoice
+
+        config TFT_LCD_100ASK_DISP_ROTATION
+            int "Set display rotation angle"
+            default 0
+
+            help
+                The rotation angles you can choose are: 90, 180, 270.
 
         config SPI_TFT_LCD_100ASK_DISP_WIDTH
             int "Screen width"
@@ -146,3 +153,4 @@ menu "100ASK SPI TFT LCD setting"
             Display SPI TFT LCD Pin Assignments
 
 endmenu
+

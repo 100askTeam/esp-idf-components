@@ -36,8 +36,9 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
+static void TFT_LCD_320X480_reset(void);
 static void TFT_LCD_320X480_send_cmd(TFT_LCD_320X480_driver_t *driver, const TFT_LCD_320X480_command_t *command);
-static void TFT_LCD_320X480_config(TFT_LCD_320X480_driver_t *driver);
+static void TFT_LCD_320X480_config(TFT_LCD_320X480_driver_t *driver, TFT_LCD_320X480_rotation_t rotation);
 static void TFT_LCD_320X480_pre_cb(spi_transaction_t *transaction);
 static void TFT_LCD_320X480_queue_empty(TFT_LCD_320X480_driver_t *driver);
 static void TFT_LCD_320X480_multi_cmd(TFT_LCD_320X480_driver_t *driver, const TFT_LCD_320X480_command_t *sequence);
@@ -114,22 +115,23 @@ bool TFT_LCD_320X480_init(TFT_LCD_320X480_driver_t *driver){
     gpio_set_direction(SPI_TFT_LCD_100ASK_DISP_PIN_DC, GPIO_MODE_OUTPUT);
 
     // Set the screen configuration
-    TFT_LCD_320X480_reset(driver);
-    TFT_LCD_320X480_config(driver);
+    TFT_LCD_320X480_reset();
+
+#if   CONFIG_TFT_LCD_100ASK_DISP_ROTATION == 90
+	TFT_LCD_320X480_config(driver, TFT_LCD_320X480_ROTATION_90);
+#elif CONFIG_TFT_LCD_100ASK_DISP_ROTATION == 180
+	TFT_LCD_320X480_config(driver, TFT_LCD_320X480_ROTATION_180);
+#elif CONFIG_TFT_LCD_100ASK_DISP_ROTATION == 270
+	TFT_LCD_320X480_config(driver, TFT_LCD_320X480_ROTATION_270);
+#else
+	TFT_LCD_320X480_config(driver, TFT_LCD_320X480_ROTATION_0);
+#endif
+    
 
     ESP_LOGI(TAG,"Display configured and ready to work.");
 
     return true;
 }
-
-
-void TFT_LCD_320X480_reset(TFT_LCD_320X480_driver_t *driver) {
-	gpio_set_level(SPI_TFT_LCD_100ASK_DISP_PIN_RST, 0);
-	vTaskDelay(100 / portTICK_PERIOD_MS);
-	gpio_set_level(SPI_TFT_LCD_100ASK_DISP_PIN_RST, 1);
-	vTaskDelay(100 / portTICK_PERIOD_MS);
-}
-
 
 void TFT_LCD_320X480_fill_area(TFT_LCD_320X480_driver_t *driver, TFT_LCD_320X480_color_t color, uint16_t start_x, uint16_t start_y, uint16_t width, uint16_t height){
     // Fill the buffer with the selected color
@@ -237,57 +239,90 @@ void TFT_LCD_320X480_set_endian(TFT_LCD_320X480_driver_t *driver){
 	TFT_LCD_320X480_multi_cmd(driver, init_sequence2);
 }
 
+void TFT_LCD_320X480_set_rotation(TFT_LCD_320X480_driver_t *driver, TFT_LCD_320X480_rotation_t rotation)
+{
+	TFT_LCD_320X480_reset();
+    TFT_LCD_320X480_config(driver, rotation);
+}
 
 /**********************
  *   STATIC FUNCTIONS
  **********************/
+static void TFT_LCD_320X480_reset(void) {
+	gpio_set_level(SPI_TFT_LCD_100ASK_DISP_PIN_RST, 0);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	gpio_set_level(SPI_TFT_LCD_100ASK_DISP_PIN_RST, 1);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+}
 
 static void TFT_LCD_320X480_pre_cb(spi_transaction_t *transaction) {
 	const TFT_LCD_320X480_transaction_data_t *data = (TFT_LCD_320X480_transaction_data_t *)transaction->user;
 	gpio_set_level(SPI_TFT_LCD_100ASK_DISP_PIN_DC, data->data);
 }
 
-static void TFT_LCD_320X480_config(TFT_LCD_320X480_driver_t *driver){
+static void TFT_LCD_320X480_config(TFT_LCD_320X480_driver_t *driver, TFT_LCD_320X480_rotation_t rotation){
 	const TFT_LCD_320X480_command_t init_sequence[] = {
-		{0xCF, 0, 3, (const uint8_t *)"\x00\x83\x30"},
-		{0xED, 0, 4, (const uint8_t *)"\x64\x03\x12\x81"},
-		{0xE8, 0, 3, (const uint8_t *)"\x85\x01\x79"},
-		{0xCB, 0, 5, (const uint8_t *)"\x39\x2C\x00\x34\x02"},
-		{0xF7, 0, 1, (const uint8_t *)"\x20"},
-		{0xEA, 0, 2, (const uint8_t *)"\x00\x00"},
-		{0xC0, 0, 1, (const uint8_t *)"\x26"},		 /*Power control*/
-		{0xC1, 0, 1, (const uint8_t *)"\x11"},		 /*Power control */
-		{0xC5, 0, 2, (const uint8_t *)"\x35\x3E"}, /*VCOM control*/
-		{0xC7, 0, 1, (const uint8_t *)"\xBE"},		 /*VCOM control*/
-		{0x36, 0, 1, (const uint8_t *)"\x28"},		 /*Memory Access Control*/
-		{0x3A, 0, 1, (const uint8_t *)"\x55"},		 /*Pixel Format Set*/
-		{0xB1, 0, 2, (const uint8_t *)"\x00\x1B"},
-		{0xF2, 0, 1, (const uint8_t *)"\x08"},
-		{0x26, 0, 1, (const uint8_t *)"\x01"},
-		{0xE0, 0, 15, (const uint8_t *)"\x1F\x1A\x18\x0A\x0F\x06\x45\x87\x32\x0A\x07\x02\x07\x05\x00"},
-		{0XE1, 0, 15, (const uint8_t *)"\x00\x25\x27\x05\x10\x09\x3A\x78\x4D\x05\x18\x0D\x38\x3A\x1F"},
-		{0x2A, 0, 4, (const uint8_t *)"\x00\x00\x00\xEF"},
-		{0x2B, 0, 4, (const uint8_t *)"\x00\x00\x01\x3f"},
-		{0x2C, 0, 0, (const uint8_t *)"\x0"},
-		{0xB7, 0, 1, (const uint8_t *)"\x07"},
-		{0xB6, 0, 4, (const uint8_t *)"\x0A\x82\x27\x00"},
-		{0x11, 100, 0, (const uint8_t *)"\x0"},
-		{0x29, 100, 0, (const uint8_t *)"\x0"},
-		{0xff, 0, 0, NULL},
+		{0x11, 120, 1, (const uint8_t *)"\x00"},
+		{0xF0, 0, 1, (const uint8_t *)"\xC3"},
+		{0xF0, 0, 1, (const uint8_t *)"\x96"},
+		{0x36, 0, 1, (const uint8_t *)"\x48"},
+		{0xB4, 0, 1, (const uint8_t *)"\x01"},
+		{0xB7, 0, 1, (const uint8_t *)"\xC6"},
+		{0xE8, 0, 8, (const uint8_t *)"\x40\x8A\x00\x00\x29\x19\xA5\x33"},
+		{0xC1, 0, 1, (const uint8_t *)"\x06"},
+		{0xC2, 0, 1, (const uint8_t *)"\xA7"},
+		{0xC5, 0, 1, (const uint8_t *)"\x18"},
+		{0xE0, 0, 14, (const uint8_t *)"\xF0\x09\x0B\x06\x04\x15\x2F\x54\x42\x3C\x17\x14\x18\x1B"},
+		{0XE1, 0, 14, (const uint8_t *)"\xF0\x09\x0B\x06\x04\x03\x2D\x43\x42\x3B\x16\x14\x17\x1B"},
+		{0xF0, 0, 1, (const uint8_t *)"\x3C"},
+		{0xF0, 0, 1, (const uint8_t *)"\x69"},
+		{0x3A, 120, 1, (const uint8_t *)"\x55"},
+		{0x29, 0, 0, (const uint8_t *)"\x0"},
+		{0xff, 0, 0, NULL}, // End of commands
 	};
 	TFT_LCD_320X480_multi_cmd(driver, init_sequence);
 
-	const TFT_LCD_320X480_command_t set_orientation[] = {
-		{0x36, 0, 4, (const uint8_t *)"\x48\x88\x28\xE8}"},
-		{0xff, 0, 0, NULL},                  // End of commands
-	};
-	TFT_LCD_320X480_multi_cmd(driver, set_orientation);
+	if(rotation == TFT_LCD_320X480_ROTATION_90)
+	{
+		const TFT_LCD_320X480_command_t set_rotation[] = {
+			{0x36, 0, 1, (const uint8_t *)"\xE8"}, // 90  (((1<<7)|(1<<6)|(1<<5))|0X08) D2U_R2L
+			{0xff, 0, 0, NULL},                    // End of commands
+		};
+		TFT_LCD_320X480_multi_cmd(driver, set_rotation);
+	}
+	else if(rotation == TFT_LCD_320X480_ROTATION_180)
+	{
+		const TFT_LCD_320X480_command_t set_rotation[] = {
+			{0x36, 0, 1, (const uint8_t *)"\x88"}, // 180 (((1<<7)|(0<<6)|(0<<5))|0X08) L2R_D2U
+			{0xff, 0, 0, NULL},                    // End of commands
+		};
+		TFT_LCD_320X480_multi_cmd(driver, set_rotation);
+	}
+	else if(rotation == TFT_LCD_320X480_ROTATION_270)
+	{
+		const TFT_LCD_320X480_command_t set_rotation[] = {
+			{0x36, 0, 1, (const uint8_t *)"\x28"}, // 270 (((0<<7)|(0<<6)|(1<<5))|0X08) U2D_L2R
+			{0xff, 0, 0, NULL},                    // End of commands
+		};
+		TFT_LCD_320X480_multi_cmd(driver, set_rotation);
+	}
+	else
+	{
+		const TFT_LCD_320X480_command_t set_rotation[] = {
+			{0x36, 0, 1, (const uint8_t *)"\x48"}, // 0 (((0<<7)|(1<<6)|(0<<5))|0X08) R2L_U2D
+			{0xff, 0, 0, NULL},                    // End of commands
+		};
+		TFT_LCD_320X480_multi_cmd(driver, set_rotation);
+	}
 
-	const TFT_LCD_320X480_command_t set_invert_colors[] = {
-		{0x20, 0, 0, NULL},
-		{0xff, 0, 0, NULL},                  // End of commands
+
+	const TFT_LCD_320X480_command_t set_screen_size[] = {
+		{0x2A, 0, 4, (const uint8_t *)"\x00\x00\x01\x3f"},
+		{0x2B, 0, 4, (const uint8_t *)"\x00\x00\x01\xdf"},
+		{0xff, 0, 0, NULL},                             // End of commands
 	};
-	TFT_LCD_320X480_multi_cmd(driver, set_invert_colors);
+	TFT_LCD_320X480_multi_cmd(driver, set_screen_size);
+
 }
 
 

@@ -41,6 +41,15 @@ extern "C" {
 #define TFT_LCD_100ASK_COLOR_RED                0x07E0
 #define TFT_LCD_100ASK_COLOR_GREEN              0x001F
 
+
+typedef enum
+{
+    TFT_LCD_100ASK_ROTATION_0 = 0,
+    TFT_LCD_100ASK_ROTATION_90,
+    TFT_LCD_100ASK_ROTATION_180,
+    TFT_LCD_100ASK_ROTATION_270,
+} tft_lcd_100ask_rotation_t;
+
 /**********************
  *      TYPEDEFS
  **********************/
@@ -55,9 +64,11 @@ void tft_lcd_100ask_hal_display_flush(lv_disp_drv_t * drv, const lv_area_t * are
 
 void tft_lcd_100ask_hal_clear(uint16_t color);
 
-uint16_t * tft_lcd_100ask_hal_get_buffer();
+void tft_lcd_100ask_hal_set_rotation(tft_lcd_100ask_rotation_t rotation);
 
-size_t tft_lcd_100ask_hal_get_buffer_size();
+uint16_t * tft_lcd_100ask_hal_get_buffer(void);
+
+size_t tft_lcd_100ask_hal_get_buffer_size(void);
 
 /**********************
  *      MACROS
