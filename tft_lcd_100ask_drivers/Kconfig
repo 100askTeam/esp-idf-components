@@ -12,6 +12,11 @@ menu "100ASK SPI TFT LCD setting"
                 bool "320X480"
                 help
                     https://forums.100ask.net
+            
+            config USE_100ASK_SPI_TFT_LCD_170X320
+                bool "170X320"
+                help
+                    https://forums.100ask.net
         endchoice
 
         config TFT_LCD_100ASK_DISP_ROTATION
@@ -153,4 +158,3 @@ menu "100ASK SPI TFT LCD setting"
             Display SPI TFT LCD Pin Assignments
 
 endmenu
-
