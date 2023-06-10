@@ -7,14 +7,19 @@ menu "100ASK SPI TFT LCD setting"
             default USE_100ASK_SPI_TFT_LCD_320X480
             help
                 Default display controller model
-
-            config USE_100ASK_SPI_TFT_LCD_320X480
-                bool "320X480"
-                help
-                    https://forums.100ask.net
             
             config USE_100ASK_SPI_TFT_LCD_170X320
                 bool "170X320"
+                help
+                    https://forums.100ask.net
+            
+            config USE_100ASK_SPI_TFT_LCD_240X240
+                bool "240X240"
+                help
+                    https://forums.100ask.net
+        
+            config USE_100ASK_SPI_TFT_LCD_320X480
+                bool "320X480"
                 help
                     https://forums.100ask.net
         endchoice
@@ -29,6 +34,7 @@ menu "100ASK SPI TFT LCD setting"
         config SPI_TFT_LCD_100ASK_DISP_WIDTH
             int "Screen width"
             default 170 if USE_100ASK_SPI_TFT_LCD_170X320
+            default 240 if USE_100ASK_SPI_TFT_LCD_240X240
             default 320 if USE_100ASK_SPI_TFT_LCD_320X480
 
             help
@@ -37,6 +43,7 @@ menu "100ASK SPI TFT LCD setting"
         config SPI_TFT_LCD_100ASK_DISP_HEIGHT
             int "Screen height"
             default 320 if USE_100ASK_SPI_TFT_LCD_170X320
+            default 240 if USE_100ASK_SPI_TFT_LCD_240X240
             default 480 if USE_100ASK_SPI_TFT_LCD_320X480
 
             help
