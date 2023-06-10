@@ -28,14 +28,16 @@ menu "100ASK SPI TFT LCD setting"
 
         config SPI_TFT_LCD_100ASK_DISP_WIDTH
             int "Screen width"
-            default 320
+            default 170 if USE_100ASK_SPI_TFT_LCD_170X320
+            default 320 if USE_100ASK_SPI_TFT_LCD_320X480
 
             help
                 Configure the display screen width here.
 
         config SPI_TFT_LCD_100ASK_DISP_HEIGHT
             int "Screen height"
-            default 480
+            default 320 if USE_100ASK_SPI_TFT_LCD_170X320
+            default 480 if USE_100ASK_SPI_TFT_LCD_320X480
 
             help
                 Configure the display screen height here.
@@ -72,8 +74,7 @@ menu "100ASK SPI TFT LCD setting"
         config SPI_TFT_LCD_100ASK_DISP_PIN_MISO
             int "GPIO for MISO (Master In Slave Out)"
             depends on SPI_TFT_LCD_100ASK_DISPLAY_USE_PIN_MISO
-            default -1
-            default 0
+            default 13
 
             help
                 Configure the display MISO pin here.s
@@ -113,15 +114,8 @@ menu "100ASK SPI TFT LCD setting"
             help
                 Configure the display Busy pin here.
 
-        config SPI_TFT_LCD_100ASK_BACKLIGHT_PWM
-            bool
-            prompt "PWM control"
-
-            help
-                Display backlight is controlled by pulse-width modulation, allowing brightness settings.
-
         choice
-            default SPI_TFT_LCD_100ASK_BACKLIGHT_SWITCH
+            default SPI_TFT_LCD_100ASK_BACKLIGHT_PWM
             prompt "Backlight Control"
     
             config SPI_TFT_LCD_100ASK_DISP_BACKLIGHT_OFF
@@ -146,7 +140,6 @@ menu "100ASK SPI TFT LCD setting"
                     Display backlight is controlled by pulse-width modulation, allowing brightness settings.
     
         endchoice
-        
         
     endmenu
     

@@ -13,5 +13,5 @@ TFT LCD display Pin      | SPI pin | DShanMCU-Mio pin     |  Notes
  SCK                     | SCK     | GPIO12               |
  RS                      |         | GPIO5                |
  CS                      | CS      | GPIO10               |
- MISO                    | MISO    | -                    |
+ MISO                    | MISO    | -1/13                |
 

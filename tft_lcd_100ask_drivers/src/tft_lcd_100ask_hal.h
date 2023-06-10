@@ -21,7 +21,7 @@ extern "C" {
 /*********************
  *      DEFINES
  *********************/
-#define SPI_TFT_LCD_100ASK_QUEUE_SIZE           (2)
+#define SPI_TFT_LCD_100ASK_QUEUE_SIZE           (10)
 #define HSPI_CLK_SPEED                          CONFIG_SPI_TFT_LCD_100ASK_DISP_SPI_FREQUENCY
 
 #define SCR_WIDTH                               CONFIG_SPI_TFT_LCD_100ASK_DISP_WIDTH
@@ -58,17 +58,11 @@ typedef enum
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
-void *tft_lcd_100ask_hal_init(void);
+bool tft_lcd_100ask_hal_init(void);
 
 void tft_lcd_100ask_hal_display_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_map);
 
-void tft_lcd_100ask_hal_clear(uint16_t color);
-
 void tft_lcd_100ask_hal_set_rotation(tft_lcd_100ask_rotation_t rotation);
-
-uint16_t * tft_lcd_100ask_hal_get_buffer(void);
-
-size_t tft_lcd_100ask_hal_get_buffer_size(void);
 
 /**********************
  *      MACROS
