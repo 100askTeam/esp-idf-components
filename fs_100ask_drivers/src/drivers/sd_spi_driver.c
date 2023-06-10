@@ -22,6 +22,8 @@
  *********************/
 #define MOUNT_POINT        CONFIG_FS_100ASK_MOUNT_POINT
 
+#define SPI_BUFFER_SIZE       (20 * 320)
+
 /**********************
  *      TYPEDEFS
  **********************/
@@ -47,65 +49,52 @@ static sdmmc_host_t host = SDSPI_HOST_DEFAULT();
  **********************/
 sdmmc_card_t * sdspi_100ask_init(sdspi_100ask_driver_t *driver)
 {
-    esp_err_t ret;
+    sdmmc_host_t host_config = SDSPI_HOST_DEFAULT();
+    host_config.slot = SPI2_HOST;
+    host_config.max_freq_khz = SDMMC_FREQ_DEFAULT;
+    host_config.do_transaction = &sdspi_host_do_transaction;
+    esp_err_t err;
 
-    // Options for mounting the filesystem.
-    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-        .format_if_mount_failed = false,
-        .max_files = 5,
-        .allocation_unit_size = 16 * 1024
-    };
-
-    
-    ESP_LOGI(TAG, "Initializing SD card");
-
-    // Use settings defined above to initialize SD card and mount FAT filesystem.
-    // Note: esp_vfs_fat_sdmmc/sdspi_mount is all-in-one convenience functions.
-    // Please check its source code and implement error recovery when developing
-    // production applications.
-    ESP_LOGI(TAG, "Using SPI peripheral");
-
-    host.slot = SPI3_HOST;
-
+    // Starting with 4.2.0 we have to initialize the SPI bus ourselves
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+    slot_config.host_id = SPI2_HOST;
+    slot_config.gpio_cs = driver->pin_cs;
     spi_bus_config_t bus_cfg = {
         .mosi_io_num = driver->pin_mosi,
         .miso_io_num = driver->pin_miso,
         .sclk_io_num = driver->pin_sclk,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
-        .max_transfer_sz = driver->max_transfer_sz,
+        .max_transfer_sz= SPI_BUFFER_SIZE * 2 * sizeof(uint16_t),
     };
-    ret = spi_bus_initialize(host.slot, &bus_cfg, SPI_DMA_CH_AUTO);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize bus.");
-        return false;
-    }
-
-    // This initializes the slot without card detect (CD) and write protect (WP) signals.
-    // Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
-    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+    err = spi_bus_initialize(SPI2_HOST, &bus_cfg, SPI_DMA_CH_AUTO);
+    if (err != ESP_OK) // check but do not abort, let esp_vfs_fat_sdspi_mount decide
+        ESP_LOGE(TAG, "SPI bus init failed (0x%x)\n", err);
+#else
+    sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
+    slot_config.gpio_miso = driver->pin_miso;
+    slot_config.gpio_mosi = driver->pin_mosi;
+    slot_config.gpio_sck = driver->pin_sclk;
     slot_config.gpio_cs = driver->pin_cs;
-    slot_config.host_id = host.slot;
+    slot_config.dma_channel = 1;
+    #define esp_vfs_fat_sdspi_mount esp_vfs_fat_sdmmc_mount
+#endif
 
-    ESP_LOGI(TAG, "Mounting filesystem");
-    ret = esp_vfs_fat_sdspi_mount(MOUNT_POINT, &host, &slot_config, &mount_config, &card);
+    esp_vfs_fat_mount_config_t mount_config = {.max_files = 5};
 
-    if (ret != ESP_OK) {
-        if (ret == ESP_FAIL) {
-            ESP_LOGE(TAG, "Failed to mount filesystem. "
-                     "If you want the card to be formatted, set the CONFIG_EXAMPLE_FORMAT_IF_MOUNT_FAILED menuconfig option.");
-        } else {
-            ESP_LOGE(TAG, "Failed to initialize the card (%s). "
-                     "Make sure SD card lines have pull-up resistors in place.", esp_err_to_name(ret));
-        }
-        return false;
+    err = esp_vfs_fat_sdspi_mount(MOUNT_POINT, &host_config, &slot_config, &mount_config, &card);
+    if (err == ESP_ERR_TIMEOUT || err == ESP_ERR_INVALID_RESPONSE || err == ESP_ERR_INVALID_CRC)
+    {
+        ESP_LOGW(TAG, "SD Card mounting failed (0x%x), retrying at lower speed...\n", err);
+        host_config.max_freq_khz = SDMMC_FREQ_PROBING;
+        err = esp_vfs_fat_sdspi_mount(MOUNT_POINT, &host_config, &slot_config, &mount_config, &card);
     }
-    ESP_LOGI(TAG, "Filesystem mounted");
 
-    // Card has been initialized, print its properties
-    sdmmc_card_print_info(stdout, card);
+     ESP_LOGE(TAG, "SPI bus init OK");
 
     return card;
+
 }
 
 void sdspi_100ask_unmount(void)

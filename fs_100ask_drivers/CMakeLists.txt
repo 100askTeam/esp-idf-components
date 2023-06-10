@@ -2,4 +2,5 @@ set(srcs "./src/fs_100ask_hal.c" "./src/lv_port_fs_fatfs.c" "./src/drivers/inter
 set(includes "./src" "./src/drivers")
 
 idf_component_register(SRCS ${srcs}
-                       INCLUDE_DIRS ${includes})
+                       INCLUDE_DIRS ${includes}
+                       REQUIRES fatfs lvgl)
