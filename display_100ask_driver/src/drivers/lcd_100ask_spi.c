@@ -1,6 +1,7 @@
-/**
- * @file tft_lcd_display.c
+/*
+ * SPDX-FileCopyrightText: 2008-2023 Shenzhen Baiwenwang Technology CO LTD
  *
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /*********************
@@ -19,28 +20,36 @@
 #include "driver/gpio.h"
 
 #include "esp_log.h"
-#include "lvgl.h"
 
-#ifdef CONFIG_USE_100ASK_SPI_TFT_LCD
-
-#include "tft_lcd_100ask_hal.h"
-#include "tft_lcd_display.h"
+#if CONFIG_USE_100ASK_SPI_DISPLAY_SCREEN && CONFIG_USE_100ASK_DISPLAY_SCREEN_SPI_DRIVE
+#include "lcd_100ask_spi.h"
 
 /*********************
  *      DEFINES
  *********************/
 #define TAG "display_driver"
 
+#define LCD_100ASK_SPI_FREQUENCY   CONFIG_DISPLAY_SCREEN_100ASK_SPI_FREQUENCY
+#define LCD_100ASK_SPI_MODE        CONFIG_DISPLAY_SCREEN_100ASK_SPI_MODE
+#define LCD_100ASK_SPI_HOST        CONFIG_DISPLAY_SCREEN_100ASK_SPI_HOST
+
+#define LCD_100ASK_PIN_MOSI        CONFIG_DISPLAY_SCREEN_100ASK_SPI_PIN_MOSI
+#define LCD_100ASK_PIN_MISO        CONFIG_DISPLAY_SCREEN_100ASK_SPI_PIN_MISO
+#define LCD_100ASK_PIN_CLK         CONFIG_DISPLAY_SCREEN_100ASK_SPI_PIN_CLK
+#define LCD_100ASK_PIN_CS          CONFIG_DISPLAY_SCREEN_100ASK_SPI_PIN_CS
+#define LCD_100ASK_PIN_DC          CONFIG_DISPLAY_SCREEN_100ASK_SPI_PIN_DC
+#define LCD_100ASK_PIN_RST         CONFIG_DISPLAY_SCREEN_100ASK_SPI_PIN_RST
+
 #define SPI_TRANSACTION_COUNT (8)
 #define SPI_BUFFER_COUNT      (5)
 #define SPI_TASK_PRIORITY 	  (10)
 
-#ifdef CONFIG_USE_100ASK_SPI_TFT_LCD_170X320
-#define SPI_BUFFER_SIZE       (20 * 320)
-#elif  CONFIG_USE_100ASK_SPI_TFT_LCD_240X240
-#define SPI_BUFFER_SIZE       (20 * 240)
-#elif  CONFIG_USE_100ASK_SPI_TFT_LCD_320X480
-#define SPI_BUFFER_SIZE       (20 * 480)
+#ifdef CONFIG_USE_100ASK_DISPLAY_SCREEN_170X320
+	#define SPI_BUFFER_SIZE       (20 * 320)
+#elif  CONFIG_USE_100ASK_DISPLAY_SCREEN_240X240
+	#define SPI_BUFFER_SIZE       (20 * 240)
+#elif  CONFIG_USE_100ASK_DISPLAY_SCREEN_320X480
+	#define SPI_BUFFER_SIZE       (10 * 480)
 #endif
 
 #define lcd_send_data(buffer, length) spi_queue_transaction(buffer, length, 3)
@@ -52,13 +61,13 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-static void tft_lcd_display_reset(void);
-static void tft_lcd_display_config(tft_lcd_display_rotation_t rotation);
-static void tft_lcd_display_pre_cb(spi_transaction_t *transaction);
-static void display_task(void *arg);
+static void lcd_100ask_reset(void);
+static void lcd_100ask_config(lcd_display_rotation_t rotation);
+static void lcd_100ask_pre_cb(spi_transaction_t *transaction);
+static void lcd_100ask_display_task(void *arg);
 
-static void tft_lcd_display_send_cmd(const tft_lcd_display_command_t *command);
-static void tft_lcd_display_multi_cmd( const tft_lcd_display_command_t *sequence);
+static void lcd_100ask_send_cmd(const lcd_display_command_t *command);
+static void lcd_100ask_send_multi( const lcd_display_command_t *sequence);
 
 static inline uint16_t *spi_get_buffer(void);
 static inline void spi_queue_transaction(const void *data, size_t length, uint32_t type);
@@ -76,12 +85,11 @@ static QueueHandle_t spi_transactions;
 static QueueHandle_t spi_buffers;
 
 QueueHandle_t display_task_queue;
-//SemaphoreHandle_t xdisplaySemaphore;
 
 /**********************
  *   GLOBAL FUNCTIONS
  **********************/
-bool tft_lcd_display_init(void){
+esp_err_t lcd_100ask_spi_init(void){
 	esp_err_t ret;
 
 	spi_transactions = xQueueCreate(SPI_TRANSACTION_COUNT, sizeof(spi_transaction_t *));
@@ -99,29 +107,23 @@ bool tft_lcd_display_init(void){
         xQueueSend(spi_buffers, &buffer, portMAX_DELAY);
     }
 
-    ESP_LOGI(TAG,"Set RST pin: %i \n Set DC pin: %i", SPI_TFT_LCD_100ASK_DISP_PIN_RST, SPI_TFT_LCD_100ASK_DISP_PIN_DC);
-
     /* Set-Up SPI BUS */
     spi_bus_config_t buscfg = {
-		.mosi_io_num    = SPI_TFT_LCD_100ASK_DISP_PIN_MOSI,
-#if CONFIG_SPI_TFT_LCD_100ASK_DISPLAY_USE_PIN_MISO
-		.miso_io_num    = CONFIG_SPI_TFT_LCD_100ASK_DISP_PIN_MISO,
-#else
+		.mosi_io_num    = LCD_100ASK_PIN_MOSI,
 		.miso_io_num    = -1,
-#endif
-		.sclk_io_num    = SPI_TFT_LCD_100ASK_DISP_PIN_CLK,
+		.sclk_io_num    = LCD_100ASK_PIN_CLK,
 		.quadwp_io_num  = -1,
 		.quadhd_io_num  = -1,
-		.max_transfer_sz= SPI_BUFFER_SIZE * 2 * sizeof(tft_lcd_display_color_t), 
+		.max_transfer_sz= SPI_BUFFER_SIZE * 2 * sizeof(lcd_display_color_t), 
 	};
 
     /* Configure SPI BUS */
     spi_device_interface_config_t devcfg = {
-		.clock_speed_hz = HSPI_CLK_SPEED,
-		.mode           = SPI_TFT_LCD_100ASK_DISP_SPI_MODE,
-		.spics_io_num   = SPI_TFT_LCD_100ASK_DISP_PIN_CS,
+		.clock_speed_hz = LCD_100ASK_SPI_FREQUENCY,
+		.mode           = LCD_100ASK_SPI_MODE,
+		.spics_io_num   = LCD_100ASK_PIN_CS,
 		.queue_size     = SPI_TRANSACTION_COUNT,
-		.pre_cb         = tft_lcd_display_pre_cb,
+		.pre_cb         = lcd_100ask_pre_cb,
 		.flags 			= SPI_DEVICE_NO_DUMMY,
 	};
 
@@ -139,35 +141,35 @@ bool tft_lcd_display_init(void){
 	if (xTaskCreatePinnedToCore(&spi_task, "lcd_spi", (1.5 * 1024), NULL, (SPI_TASK_PRIORITY - 1), NULL, 1) != pdPASS)
     {
 		ESP_LOGE(TAG, "Task[%s] creation failed!", "lcd_spi");
-        return false;
+        return ESP_FAIL;
 	}
 
     ESP_LOGI(TAG,"SPI Bus configured correctly.");
 
     /* Set the RESET and DC PIN */ 
-    gpio_pad_select_gpio(SPI_TFT_LCD_100ASK_DISP_PIN_RST);
-    gpio_pad_select_gpio(SPI_TFT_LCD_100ASK_DISP_PIN_DC);
-    gpio_set_direction(SPI_TFT_LCD_100ASK_DISP_PIN_RST, GPIO_MODE_OUTPUT);
-    gpio_set_direction(SPI_TFT_LCD_100ASK_DISP_PIN_DC, GPIO_MODE_OUTPUT);
+    gpio_pad_select_gpio(LCD_100ASK_PIN_RST);
+    gpio_pad_select_gpio(LCD_100ASK_PIN_DC);
+    gpio_set_direction(LCD_100ASK_PIN_RST, GPIO_MODE_OUTPUT);
+    gpio_set_direction(LCD_100ASK_PIN_DC, GPIO_MODE_OUTPUT);
 
     /* Set the screen configuration */
-    tft_lcd_display_reset();
+    lcd_100ask_reset();
 
 	/*initialize screen*/
-	tft_lcd_display_config((tft_lcd_display_rotation_t)(CONFIG_TFT_LCD_100ASK_DISP_ROTATION / 90));
+	lcd_100ask_config((lcd_display_rotation_t)(CONFIG_DISPLAY_SCREEN_100ASK_ROTATION / 90));
 	
-	if (xTaskCreatePinnedToCore(&display_task, "lcd_display", (3 * 1024), NULL, 5, NULL, 1) != pdPASS)
+	if (xTaskCreatePinnedToCore(&lcd_100ask_display_task, "lcd_display", (3 * 1024), NULL, 5, NULL, 1) != pdPASS)
     {
 		ESP_LOGE(TAG, "Task[%s] creation failed!", "lcd_display");
-        return false;
+        return ESP_FAIL;
 	}
 
     ESP_LOGI(TAG, "Display configured and ready to work.");
 
-    return true;
+    return ESP_OK;
 }
 
-void tft_lcd_display_set_window(uint16_t start_x, uint16_t start_y, uint16_t end_x, uint16_t end_y){
+void lcd_100ask_spi_set_window(uint16_t start_x, uint16_t start_y, uint16_t end_x, uint16_t end_y){
 	uint8_t caset[4];
 	uint8_t raset[4];
 
@@ -181,20 +183,20 @@ void tft_lcd_display_set_window(uint16_t start_x, uint16_t start_y, uint16_t end
 	raset[2] = (uint8_t)((end_y + lcd_dev_yoffset) >> 8) & 0xFF;
 	raset[3] = (uint8_t)((end_y + lcd_dev_yoffset) & 0xff);
 
-	tft_lcd_display_command_t sequence[] = {
-		{TFT_LCD_DISPLAY_CMD_CASET, 0, 4, caset},
-		{TFT_LCD_DISPLAY_CMD_RASET, 0, 4, raset},
-		{TFT_LCD_DISPLAY_CMD_RAMWR, 0, 0, NULL},
-		{TFT_LCD_DISPLAY_CMDLIST_END, 0, 0, NULL},
+	lcd_display_command_t sequence[] = {
+		{LCD_DISPLAY_CMD_CASET, 0, 4, caset},
+		{LCD_DISPLAY_CMD_RASET, 0, 4, raset},
+		{LCD_DISPLAY_CMD_RAMWR, 0, 0, NULL},
+		{LCD_DISPLAY_CMDLIST_END, 0, 0, NULL},
 	};
 
-	tft_lcd_display_multi_cmd(sequence);
+	lcd_100ask_send_multi(sequence);
 }
 
-void tft_lcd_display_set_rotation(tft_lcd_display_rotation_t rotation)
+void lcd_100ask_spi_set_rotation(lcd_display_rotation_t rotation)
 {
-	tft_lcd_display_reset();
-    tft_lcd_display_config(rotation);
+	lcd_100ask_reset();
+    lcd_100ask_config(rotation);
 }
 
 /**********************
@@ -216,53 +218,47 @@ static void spi_task(void *arg)
     vTaskDelete(NULL);
 }
 
-static void display_task(void *arg)
+static void lcd_100ask_display_task(void *arg)
 {
-    display_task_queue = xQueueCreate(1, sizeof(tft_lcd_display_fb_update_t *));
+    display_task_queue = xQueueCreate(1, sizeof(lcd_display_fb_update_t *));
 	if(!display_task_queue)	ESP_LOGE(TAG, "display_task_queue == NULL");
-	//xdisplaySemaphore = xSemaphoreCreateMutex();
 
     while (1)
     {
-		tft_lcd_display_fb_update_t *update;
+		lcd_display_fb_update_t *update;
 
 		xQueuePeek(display_task_queue, &update, portMAX_DELAY);
-        // xQueueReceive(display_task_queue, &update, portMAX_DELAY);
 
-		tft_lcd_display_area_t * area = &update->area;
+		lcd_display_area_t * area = &update->area;
 
-		//if (pdTRUE == xSemaphoreTake(xdisplaySemaphore, portMAX_DELAY))
+		//Set the area to print on the screen
+		lcd_100ask_spi_set_window(area->x1, area->y1, area->x2, area->y2);
+
+		if(update->size > SPI_BUFFER_SIZE)
 		{
-			//Set the area to print on the screen
-			tft_lcd_display_set_window(area->x1, area->y1, area->x2, area->y2);
+			uint16_t mod  = update->size % SPI_BUFFER_SIZE;
+			uint16_t count = update->size / SPI_BUFFER_SIZE;
 
-			if(update->size > SPI_BUFFER_SIZE)
+			uint16_t i;
+			for(i = 0; i < count; i++)
 			{
-				uint16_t mod  = update->size % SPI_BUFFER_SIZE;
-				uint16_t count = update->size / SPI_BUFFER_SIZE;
-
-				uint16_t i;
-				for(i = 0; i < count; i++)
-				{
-					lcd_send_data((update->buffer + (i * SPI_BUFFER_SIZE)), SPI_BUFFER_SIZE * sizeof(tft_lcd_display_color_t));
-				}
-				if(mod > 0)	lcd_send_data((update->buffer + (i * SPI_BUFFER_SIZE)), mod * sizeof(tft_lcd_display_color_t));
+				lcd_send_data((update->buffer + (i * SPI_BUFFER_SIZE)), SPI_BUFFER_SIZE * sizeof(lcd_display_color_t));
 			}
-			else	lcd_send_data(update->buffer, update->size * sizeof(tft_lcd_display_color_t));
-
-			lv_disp_flush_ready(update->drv);
-			//ESP_LOGI(TAG,"area->x1: %d, area->y1: %d, area->x2: %d, area->y2: %d, size: %d", area->x1, area->y1, area->x2, area->y2, update->size);
-			//xSemaphoreGive(xdisplaySemaphore);
+			if(mod > 0)	lcd_send_data((update->buffer + (i * SPI_BUFFER_SIZE)), mod * sizeof(lcd_display_color_t));
 		}
+		else	lcd_send_data(update->buffer, update->size * sizeof(lcd_display_color_t));
+
+		lv_disp_flush_ready(update->drv);
+		//ESP_LOGI(TAG,"area->x1: %d, area->y1: %d, area->x2: %d, area->y2: %d, size: %d", area->x1, area->y1, area->x2, area->y2, update->size);
 
 		xQueueReceive(display_task_queue, &update, portMAX_DELAY);
 	}
 }
 
-static void tft_lcd_display_reset(void) {
-	gpio_set_level(SPI_TFT_LCD_100ASK_DISP_PIN_RST, 0);
+static void lcd_100ask_reset(void) {
+	gpio_set_level(LCD_100ASK_PIN_RST, 0);
 	vTaskDelay(20 / portTICK_PERIOD_MS);
-	gpio_set_level(SPI_TFT_LCD_100ASK_DISP_PIN_RST, 1);
+	gpio_set_level(LCD_100ASK_PIN_RST, 1);
 	vTaskDelay(20 / portTICK_PERIOD_MS);
 }
 
@@ -311,11 +307,11 @@ static inline void spi_queue_transaction(const void *data, size_t length, uint32
     }
 }
 
-static void tft_lcd_display_pre_cb(spi_transaction_t *transaction) {
-	gpio_set_level(SPI_TFT_LCD_100ASK_DISP_PIN_DC, (int)transaction->user & 1);
+static void lcd_100ask_pre_cb(spi_transaction_t *transaction) {
+	gpio_set_level(LCD_100ASK_PIN_DC, (int)transaction->user & 1);
 }
 
-static void tft_lcd_display_send_cmd(const tft_lcd_display_command_t *command){
+static void lcd_100ask_send_cmd(const lcd_display_command_t *command){
 	spi_queue_transaction(&command->command, 1, 0);
     if (command->data && command->data_size > 0)
         spi_queue_transaction(command->data, command->data_size, 1);
@@ -326,9 +322,9 @@ static void tft_lcd_display_send_cmd(const tft_lcd_display_command_t *command){
 	}
 }
 
-static void tft_lcd_display_multi_cmd( const tft_lcd_display_command_t *sequence){
-    while (sequence->command != TFT_LCD_DISPLAY_CMDLIST_END) {
-		tft_lcd_display_send_cmd(sequence);
+static void lcd_100ask_send_multi( const lcd_display_command_t *sequence){
+    while (sequence->command != LCD_DISPLAY_CMDLIST_END) {
+		lcd_100ask_send_cmd(sequence);
 		sequence++;
 	}
 }
@@ -336,10 +332,10 @@ static void tft_lcd_display_multi_cmd( const tft_lcd_display_command_t *sequence
 
 
 /* Display config */
-static void tft_lcd_display_config(tft_lcd_display_rotation_t rotation){
+static void lcd_100ask_config(lcd_display_rotation_t rotation){
 // 170X320
-#if CONFIG_USE_100ASK_SPI_TFT_LCD_170X320
-	const tft_lcd_display_command_t init_sequence[] = {
+#if CONFIG_USE_100ASK_DISPLAY_SCREEN_170X320
+	const lcd_display_command_t init_sequence[] = {
 		{0x36, 120, 1, (const uint8_t *)"\x00"},
 		{0x3A, 0, 1, (const uint8_t *)"\x05"},
 		{0xB2, 0, 5, (const uint8_t *)"\x0C\x0C\x00\x33\x33"},
@@ -358,53 +354,54 @@ static void tft_lcd_display_config(tft_lcd_display_rotation_t rotation){
 		{0x29, 0, 0, (const uint8_t *)"\x0"},
 		{0xff, 0, 0, NULL}, // End of commands
 	};
-	tft_lcd_display_multi_cmd(init_sequence);
+	lcd_100ask_send_multi(init_sequence);
 
-	if(rotation == TFT_LCD_DISPLAY_ROTATION_90)
+	if(rotation == LCD_DISPLAY_ROTATION_90)
 	{
 		lcd_dev_xoffset = 0;
 		lcd_dev_yoffset = 35;
-		const tft_lcd_display_command_t set_rotation[] = {
+		const lcd_display_command_t set_rotation[] = {
 			{0x36, 0, 1, (const uint8_t *)"\x60"}, // 90  (1<<6)|(1<<5) //BGR==1,MY==1,MX==0,MV==1
 			{0xff, 0, 0, NULL},                    // End of commands
 		};
-		tft_lcd_display_multi_cmd(set_rotation);
+		lcd_100ask_send_multi(set_rotation);
 	}
-	else if(rotation == TFT_LCD_DISPLAY_ROTATION_180)
+	else if(rotation == LCD_DISPLAY_ROTATION_180)
 	{
 		lcd_dev_xoffset = 35;
 		lcd_dev_yoffset = 0;
-		const tft_lcd_display_command_t set_rotation[] = {
+		const lcd_display_command_t set_rotation[] = {
 			{0x36, 0, 1, (const uint8_t *)"\xc0"}, // 180 (1<<6)|(1<<7) //BGR==1,MY==0,MX==0,MV==0
 			{0xff, 0, 0, NULL},                    // End of commands
 		};
-		tft_lcd_display_multi_cmd(set_rotation);
+		lcd_100ask_send_multi(set_rotation);
 	}
-	else if(rotation == TFT_LCD_DISPLAY_ROTATION_270)
+	else if(rotation == LCD_DISPLAY_ROTATION_270)
 	{
 		lcd_dev_xoffset = 0;
 		lcd_dev_yoffset = 35;
-		const tft_lcd_display_command_t set_rotation[] = {
+		const lcd_display_command_t set_rotation[] = {
 			{0x36, 0, 1, (const uint8_t *)"\xa0"}, // 270 (1<<7)|(1<<5) //BGR==1,MY==1,MX==0,MV==1
 			{0xff, 0, 0, NULL},                    // End of commands
 		};
-		tft_lcd_display_multi_cmd(set_rotation);
+		lcd_100ask_send_multi(set_rotation);
 	}
 	else
 	{
 		lcd_dev_xoffset = 35;
 		lcd_dev_yoffset = 0;
-		const tft_lcd_display_command_t set_rotation[] = {
+		const lcd_display_command_t set_rotation[] = {
 			{0x36, 0, 1, (const uint8_t *)"\x0"}, // 0 (0) //BGR==1,MY==0,MX==0,MV==0
 			{0xff, 0, 0, NULL},                    // End of commands
 		};
-		tft_lcd_display_multi_cmd(set_rotation);
+		lcd_100ask_send_multi(set_rotation);
 	}
 
+	ESP_LOGI(TAG, "Successfully initialized 170x320!");
 
 //240X240
-#elif CONFIG_USE_100ASK_SPI_TFT_LCD_240X240
-	const tft_lcd_display_command_t init_sequence[] = {
+#elif CONFIG_USE_100ASK_DISPLAY_SCREEN_240X240
+	const lcd_display_command_t init_sequence[] = {
 		{0x36, 120, 1, (const uint8_t *)"\x00"},
 		{0x3A, 0, 1, (const uint8_t *)"\x05"},
 		{0xB2, 0, 5, (const uint8_t *)"\x0C\x0C\x00\x33\x33"},
@@ -423,51 +420,54 @@ static void tft_lcd_display_config(tft_lcd_display_rotation_t rotation){
 		{0x29, 0, 0, (const uint8_t *)"\x0"},
 		{0xff, 0, 0, NULL}, // End of commands
 	};
-	tft_lcd_display_multi_cmd(init_sequence);
+	lcd_100ask_send_multi(init_sequence);
 
-	if(rotation == TFT_LCD_DISPLAY_ROTATION_90)
+	if(rotation == LCD_DISPLAY_ROTATION_90)
 	{
 		lcd_dev_xoffset = 0;
 		lcd_dev_yoffset = 0;
-		const tft_lcd_display_command_t set_rotation[] = {
+		const lcd_display_command_t set_rotation[] = {
 			{0x36, 0, 1, (const uint8_t *)"\x60"}, // 90  (1<<6)|(1<<5) //BGR==1,MY==1,MX==0,MV==1
 			{0xff, 0, 0, NULL},                    // End of commands
 		};
-		tft_lcd_display_multi_cmd(set_rotation);
+		lcd_100ask_send_multi(set_rotation);
 	}
-	else if(rotation == TFT_LCD_DISPLAY_ROTATION_180)
+	else if(rotation == LCD_DISPLAY_ROTATION_180)
 	{
 		lcd_dev_xoffset = 0;
 		lcd_dev_yoffset = 80;
-		const tft_lcd_display_command_t set_rotation[] = {
+		const lcd_display_command_t set_rotation[] = {
 			{0x36, 0, 1, (const uint8_t *)"\xc0"}, // 180 (1<<6)|(1<<7) //BGR==1,MY==0,MX==0,MV==0
 			{0xff, 0, 0, NULL},                    // End of commands
 		};
-		tft_lcd_display_multi_cmd(set_rotation);
+		lcd_100ask_send_multi(set_rotation);
 	}
-	else if(rotation == TFT_LCD_DISPLAY_ROTATION_270)
+	else if(rotation == LCD_DISPLAY_ROTATION_270)
 	{
 		lcd_dev_xoffset = 80;
 		lcd_dev_yoffset = 0;
-		const tft_lcd_display_command_t set_rotation[] = {
+		const lcd_display_command_t set_rotation[] = {
 			{0x36, 0, 1, (const uint8_t *)"\xa0"}, // 270 (1<<7)|(1<<5) //BGR==1,MY==1,MX==0,MV==1
 			{0xff, 0, 0, NULL},                    // End of commands
 		};
-		tft_lcd_display_multi_cmd(set_rotation);
+		lcd_100ask_send_multi(set_rotation);
 	}
 	else
 	{
 		lcd_dev_xoffset = 0;
 		lcd_dev_yoffset = 0;
-		const tft_lcd_display_command_t set_rotation[] = {
+		const lcd_display_command_t set_rotation[] = {
 			{0x36, 0, 1, (const uint8_t *)"\x0"}, // 0 (0) //BGR==1,MY==0,MX==0,MV==0
 			{0xff, 0, 0, NULL},                    // End of commands
 		};
-		tft_lcd_display_multi_cmd(set_rotation);
+		lcd_100ask_send_multi(set_rotation);
 	}
+
+	ESP_LOGI(TAG, "Successfully initialized 240x240!");
+
 //320X480
-#elif CONFIG_USE_100ASK_SPI_TFT_LCD_320X480
-const tft_lcd_display_command_t init_sequence[] = {
+#elif CONFIG_USE_100ASK_DISPLAY_SCREEN_320X480
+const lcd_display_command_t init_sequence[] = {
 		{0x11, 120, 1, (const uint8_t *)"\x00"},
 		{0xF0, 0, 1, (const uint8_t *)"\xC3"},
 		{0xF0, 0, 1, (const uint8_t *)"\x96"},
@@ -486,48 +486,52 @@ const tft_lcd_display_command_t init_sequence[] = {
 		{0x29, 0, 0, (const uint8_t *)"\x0"},
 		{0xff, 0, 0, NULL}, // End of commands
 	};
-	tft_lcd_display_multi_cmd(init_sequence);
+	lcd_100ask_send_multi(init_sequence);
 
-	if(rotation == TFT_LCD_DISPLAY_ROTATION_90)
+	if(rotation == LCD_DISPLAY_ROTATION_90)
 	{
-		const tft_lcd_display_command_t set_rotation[] = {
+		const lcd_display_command_t set_rotation[] = {
 			{0x36, 0, 1, (const uint8_t *)"\xE8"}, // 90  (((1<<7)|(1<<6)|(1<<5))|0X08) D2U_R2L
 			{0xff, 0, 0, NULL},                    // End of commands
 		};
-		tft_lcd_display_multi_cmd(set_rotation);
+		lcd_100ask_send_multi(set_rotation);
 	}
-	else if(rotation == TFT_LCD_DISPLAY_ROTATION_180)
+	else if(rotation == LCD_DISPLAY_ROTATION_180)
 	{
-		const tft_lcd_display_command_t set_rotation[] = {
+		const lcd_display_command_t set_rotation[] = {
 			{0x36, 0, 1, (const uint8_t *)"\x88"}, // 180 (((1<<7)|(0<<6)|(0<<5))|0X08) L2R_D2U
 			{0xff, 0, 0, NULL},                    // End of commands
 		};
-		tft_lcd_display_multi_cmd(set_rotation);
+		lcd_100ask_send_multi(set_rotation);
 	}
-	else if(rotation == TFT_LCD_DISPLAY_ROTATION_270)
+	else if(rotation == LCD_DISPLAY_ROTATION_270)
 	{
-		const tft_lcd_display_command_t set_rotation[] = {
+		const lcd_display_command_t set_rotation[] = {
 			{0x36, 0, 1, (const uint8_t *)"\x28"}, // 270 (((0<<7)|(0<<6)|(1<<5))|0X08) U2D_L2R
 			{0xff, 0, 0, NULL},                    // End of commands
 		};
-		tft_lcd_display_multi_cmd(set_rotation);
+		lcd_100ask_send_multi(set_rotation);
 	}
 	else
 	{
-		const tft_lcd_display_command_t set_rotation[] = {
+		const lcd_display_command_t set_rotation[] = {
 			{0x36, 0, 1, (const uint8_t *)"\x48"}, // 0 (((0<<7)|(1<<6)|(0<<5))|0X08) R2L_U2D
 			{0xff, 0, 0, NULL},                    // End of commands
 		};
-		tft_lcd_display_multi_cmd(set_rotation);
+		lcd_100ask_send_multi(set_rotation);
 	}
 
-	const tft_lcd_display_command_t set_screen_size[] = {
+	const lcd_display_command_t set_screen_size[] = {
 		{0x2A, 0, 4, (const uint8_t *)"\x00\x00\x01\x3f"},
 		{0x2B, 0, 4, (const uint8_t *)"\x00\x00\x01\xdf"},
 		{0xff, 0, 0, NULL},                             // End of commands
 	};
-	tft_lcd_display_multi_cmd(set_screen_size);
+	lcd_100ask_send_multi(set_screen_size);
+
+	ESP_LOGI(TAG, "Successfully initialized 320x480!");
+#else
+	#error "Display screen init sequence is not defined for this device!"
 #endif
 }
 
-#endif /* CONFIG_USE_100ASK_SPI_TFT_LCD */
+#endif /* CONFIG_USE_100ASK_SPI_DISPLAY_SCREEN && CONFIG_USE_100ASK_DISPLAY_SCREEN_SPI_DRIVE */

@@ -1,9 +1,11 @@
-/**
- * @file tft_lcd_backlight.h
+/*
+ * SPDX-FileCopyrightText: 2008-2023 Shenzhen Baiwenwang Technology CO LTD
+ *
+ * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef TFT_LCD_BACKLIGHT_H
-#define TFT_LCD_BACKLIGHT_H
+#ifndef LCD_100ASK_BACKLIGHT_H
+#define LCD_100ASK_BACKLIGHT_H
 
 /*********************
  *      INCLUDES
@@ -14,6 +16,8 @@
 extern "C" { /* extern "C" */
 #endif
 
+#ifdef CONFIG_USE_100ASK_DISPLAY_SCREEN_BACKLIGHT
+
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
@@ -23,7 +27,7 @@ extern "C" { /* extern "C" */
  * @param[in] config Configuration structure of backlight controller
  * @return           Display backlight controller handle
  */
-void tft_lcd_backlight_init(void);
+void lcd_100ask_backlight_init(void);
 
 /**
  * @brief Set backlight
@@ -34,10 +38,12 @@ void tft_lcd_backlight_init(void);
  * @param bckl                   Backlight controller handle
  * @param[in] brightness_percent Brightness in [%]
  */
-void tft_lcd_backlight_set(double percent);
+void lcd_100ask_backlight_set_brightness(double percent);
+
+#endif /* CONFIG_USE_100ASK_DISPLAY_SCREEN_BACKLIGHT */
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
 
-#endif /*TFT_LCD_BACKLIGHT_H*/
+#endif /* LCD_100ASK_BACKLIGHT_H */

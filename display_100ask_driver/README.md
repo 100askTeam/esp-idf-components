@@ -3,9 +3,9 @@
 
 # Pin assignments
 
-The table below shows the TFT LCD display pin assignments.
+The table below shows the SPI LCD display pin assignments.
 
-TFT LCD display Pin      | SPI pin | DShanMCU-Mio pin     |  Notes
+SPI LCD display Pin      | SPI pin | DShanMCU-Mio pin     |  Notes
 -------------------------|---------|----------------------|-------------
  PWM                     |         | GPIO7                |
  RESET                   |         | GPIO6                |

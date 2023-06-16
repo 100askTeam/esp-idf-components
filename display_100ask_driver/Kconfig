@@ -1,0 +1,211 @@
+menu "100ASK display screen setting"
+    menu "Display screen Pin Assignments"
+        depends on USE_100ASK_DISPLAY_SCREEN
+
+        choice
+            bool "Select the screen interface"
+            default USE_100ASK_SPI_DISPLAY_SCREEN
+            
+            config USE_100ASK_SPI_DISPLAY_SCREEN
+                bool "SPI Interfaced DISPLAY_SCREEN"
+                help
+                    https://forums.100ask.net
+            
+            config USE_100ASK_I2C_DISPLAY_SCREEN
+                bool "I2C Interfaced DISPLAY_SCREEN"
+                help
+                    not yet done
+        endchoice
+
+        choice
+            bool "Select the drive type for DISPLAY_SCREEN"
+            default USE_100ASK_DISPLAY_SCREEN_SPI_DRIVE if USE_100ASK_SPI_DISPLAY_SCREEN
+            default USE_100ASK_DISPLAY_SCREEN_I2C_DRIVE if USE_100ASK_I2C_DISPLAY_SCREEN
+            
+            config USE_100ASK_DISPLAY_SCREEN_SPI_DRIVE
+                bool "spi display screen drive"
+                help
+                    https://forums.100ask.net
+            
+            config USE_100ASK_DISPLAY_SCREEN_I2C_DRIVE
+                bool "i2c display screen drive"
+                help
+                    not yet done
+            
+            config USE_100ASK_DISPLAY_SCREEN_ESP_LCD_PANEL
+                bool "esp lcd panel drive"
+                help
+                    https://forums.100ask.net
+        endchoice
+        
+        choice
+            bool "Select the model of the display"
+            default USE_100ASK_DISPLAY_SCREEN_320X480
+            help
+                Default display controller model
+            
+            config USE_100ASK_DISPLAY_SCREEN_170X320
+                bool "170X320"
+                help
+                    https://forums.100ask.net
+            
+            config USE_100ASK_DISPLAY_SCREEN_240X240
+                bool "240X240"
+                help
+                    https://forums.100ask.net
+        
+            config USE_100ASK_DISPLAY_SCREEN_320X480
+                bool "320X480"
+                help
+                    https://forums.100ask.net
+        endchoice
+
+        config DISPLAY_SCREEN_100ASK_ROTATION
+            int "Set display rotation angle"
+            default 0
+
+            help
+                The rotation angles you can choose are: 90, 180, 270.
+
+        config DISPLAY_SCREEN_100ASK_WIDTH
+            int "Screen width"
+            default 170 if USE_100ASK_DISPLAY_SCREEN_170X320
+            default 240 if USE_100ASK_DISPLAY_SCREEN_240X240
+            default 320 if USE_100ASK_DISPLAY_SCREEN_320X480
+
+            help
+                Configure the display screen width here.
+
+        config DISPLAY_SCREEN_100ASK_HEIGHT
+            int "Screen height"
+            default 320 if USE_100ASK_DISPLAY_SCREEN_170X320
+            default 240 if USE_100ASK_DISPLAY_SCREEN_240X240
+            default 480 if USE_100ASK_DISPLAY_SCREEN_320X480
+
+            help
+                Configure the display screen height here.
+        
+        config DISPLAY_SCREEN_100ASK_SPI_FREQUENCY
+            int "Configure the display screen SPI frequency"
+            depends on USE_100ASK_SPI_DISPLAY_SCREEN
+            default 40000000
+
+            help
+                Configure the display SPI frequency here.
+
+        config DISPLAY_SCREEN_100ASK_SPI_MODE
+            int "Configure the display screen SPI mode"
+            depends on USE_100ASK_SPI_DISPLAY_SCREEN
+            default 0
+
+            help
+                Configure the display SPI mode here.
+        
+        config DISPLAY_SCREEN_100ASK_SPI_HOST
+            int "Configure the display screen SPI HOST"
+            depends on USE_100ASK_SPI_DISPLAY_SCREEN
+            default 1
+
+            help
+                0: SPI1_HOST, 1: SPI2_HOST, 2: SPI3_HOST=2
+
+        config DISPLAY_SCREEN_100ASK_SPI_PIN_MOSI
+            int "GPIO for MOSI (Master Out Slave In (SDI PIN))"
+            depends on USE_100ASK_SPI_DISPLAY_SCREEN
+            default 11
+
+            help
+                Configure the display MOSI (SDI PIN) pin here.
+
+        config DISPLAY_SCREEN_100ASK_SPI_PIN_MISO
+            int "GPIO for MISO (Master In Slave Out)"
+            default 13
+
+            help
+                Configure the display MISO pin here.
+
+        config DISPLAY_SCREEN_100ASK_SPI_PIN_CLK
+            int "GPIO for CLK (SCK / Serial Clock)"
+            depends on USE_100ASK_SPI_DISPLAY_SCREEN
+            default 12
+
+            help
+                Configure the display CLK pin here.
+
+        config DISPLAY_SCREEN_100ASK_SPI_PIN_CS
+            int "GPIO for CS (Slave Select)"
+            depends on USE_100ASK_SPI_DISPLAY_SCREEN
+            default 10
+
+            help
+                Configure the display CS pin here.
+
+        config DISPLAY_SCREEN_100ASK_SPI_PIN_DC
+            int "GPIO for DC (Data / Command)"
+            depends on USE_100ASK_SPI_DISPLAY_SCREEN
+            default 5
+
+            help
+                Configure the display DC pin here.
+            
+        config DISPLAY_SCREEN_100ASK_SPI_PIN_RST
+            int "GPIO for Reset" 
+            depends on USE_100ASK_SPI_DISPLAY_SCREEN
+            default 6
+
+            help
+                Configure the display Reset pin here.
+
+        config USE_100ASK_DISPLAY_SCREEN_BACKLIGHT
+            bool "DISPLAY_SCREEN BACKLIGHT"
+            default "n"
+
+            help
+                https://forums.100ask.net
+        
+        config DISPLAY_SCREEN_100ASK_PIN_BACKLIGHT
+            int "GPIO for backlight"
+            depends on USE_100ASK_DISPLAY_SCREEN_BACKLIGHT
+            default 7
+
+            help
+                Configure the display Busy pin here.
+
+        choice
+            depends on USE_100ASK_DISPLAY_SCREEN_BACKLIGHT
+            default DISPLAY_SCREEN_100ASK_BACKLIGHT_PWM
+            prompt "Backlight Control"
+    
+            config DISPLAY_SCREEN_100ASK_BACKLIGHT_OFF
+                bool
+                prompt "Not Used"
+
+                help
+                    Display backlight is not controlled by this driver, must be hardwired in hardware.
+    
+            config DISPLAY_SCREEN_100ASK_BACKLIGHT_SWITCH
+                bool
+                prompt "Switch control"
+
+                help
+                    Display backlight can be switched on or off.
+    
+            config DISPLAY_SCREEN_100ASK_BACKLIGHT_PWM
+                bool
+                prompt "PWM control"
+                
+                help
+                    Display backlight is controlled by pulse-width modulation, allowing brightness settings.
+    
+        endchoice
+        
+    endmenu
+    
+    config USE_100ASK_DISPLAY_SCREEN
+        bool "DISPLAY_SCREEN Pin Assignments"
+        default "n"
+
+        help 
+            DISPLAY_SCREEN Pin Assignments
+
+endmenu
