@@ -16,6 +16,10 @@ extern "C" {
  *********************/
 #ifdef CONFIG_USE_100ASK_DISPLAY_SCREEN
 
+#ifdef CONFIG_USE_100ASK_DISPLAY_SCREEN_ESP_LCD_PANEL
+    #include "esp_lcd_panel_io.h"
+#endif
+
 /* lvgl specific */
 #ifdef LV_LVGL_H_INCLUDE_SIMPLE
 #include "lvgl.h"
@@ -43,6 +47,8 @@ typedef enum
  **********************/
 #if CONFIG_USE_100ASK_SPI_DISPLAY_SCREEN && CONFIG_USE_100ASK_DISPLAY_SCREEN_SPI_DRIVE
 esp_err_t display_100ask_hal_init(void);
+#elif CONFIG_USE_100ASK_DISPLAY_SCREEN_ESP_LCD_PANEL
+esp_lcd_panel_handle_t display_100ask_hal_init(void *user_data);
 #endif
 
 void display_100ask_hal_lvgl_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_map);

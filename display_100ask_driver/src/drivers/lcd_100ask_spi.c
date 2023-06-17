@@ -40,16 +40,16 @@
 #define LCD_100ASK_PIN_DC          CONFIG_DISPLAY_SCREEN_100ASK_SPI_PIN_DC
 #define LCD_100ASK_PIN_RST         CONFIG_DISPLAY_SCREEN_100ASK_SPI_PIN_RST
 
-#define SPI_TRANSACTION_COUNT (8)
-#define SPI_BUFFER_COUNT      (5)
-#define SPI_TASK_PRIORITY 	  (10)
+#define SPI_TRANSACTION_COUNT 	   (8)
+#define SPI_BUFFER_COUNT      	   (5)
+#define SPI_TASK_PRIORITY 	  	   (10)
 
 #ifdef CONFIG_USE_100ASK_DISPLAY_SCREEN_170X320
 	#define SPI_BUFFER_SIZE       (20 * 320)
 #elif  CONFIG_USE_100ASK_DISPLAY_SCREEN_240X240
 	#define SPI_BUFFER_SIZE       (20 * 240)
 #elif  CONFIG_USE_100ASK_DISPLAY_SCREEN_320X480
-	#define SPI_BUFFER_SIZE       (10 * 480)
+	#define SPI_BUFFER_SIZE       (20 * 480)
 #endif
 
 #define lcd_send_data(buffer, length) spi_queue_transaction(buffer, length, 3)

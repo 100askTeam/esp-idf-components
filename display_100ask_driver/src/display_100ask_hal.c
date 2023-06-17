@@ -13,6 +13,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include <freertos/task.h>
+#include "esp_lcd_panel_ops.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
@@ -26,6 +27,8 @@
 
 #if CONFIG_USE_100ASK_SPI_DISPLAY_SCREEN && CONFIG_USE_100ASK_DISPLAY_SCREEN_SPI_DRIVE
     #include "drivers/lcd_100ask_spi.h"
+#elif CONFIG_USE_100ASK_DISPLAY_SCREEN_ESP_LCD_PANEL
+    #include "drivers/lcd_100ask_esp_lcd_panel.h"
 #endif
 
 /*********************
@@ -44,8 +47,10 @@
 /**********************
  *  STATIC VARIABLES
  **********************/
-lcd_display_fb_update_t update;
-lcd_display_fb_update_t *currentUpdate = &update;
+#if CONFIG_USE_100ASK_SPI_DISPLAY_SCREEN && CONFIG_USE_100ASK_DISPLAY_SCREEN_SPI_DRIVE
+    lcd_display_fb_update_t update;
+    lcd_display_fb_update_t *currentUpdate = &update;
+#endif
 
 /**********************
  *   GLOBAL FUNCTIONS
@@ -53,12 +58,14 @@ lcd_display_fb_update_t *currentUpdate = &update;
 //Initialize the display
 #if CONFIG_USE_100ASK_SPI_DISPLAY_SCREEN && CONFIG_USE_100ASK_DISPLAY_SCREEN_SPI_DRIVE
 esp_err_t display_100ask_hal_init(void)
+#elif CONFIG_USE_100ASK_DISPLAY_SCREEN_ESP_LCD_PANEL
+esp_lcd_panel_handle_t display_100ask_hal_init(void *user_data)
 #endif
 {    
 #ifdef CONFIG_USE_100ASK_DISPLAY_SCREEN_BACKLIGHT
     /*initialize screen backlight*/
     lcd_100ask_backlight_init();
-    lcd_100ask_backlight_set_brightness(100.0);
+    lcd_100ask_backlight_set_brightness(20.0);
 #endif
 
 #if CONFIG_USE_100ASK_SPI_DISPLAY_SCREEN && CONFIG_USE_100ASK_DISPLAY_SCREEN_SPI_DRIVE
@@ -68,6 +75,12 @@ esp_err_t display_100ask_hal_init(void)
 
     return ret;
 
+#elif CONFIG_USE_100ASK_DISPLAY_SCREEN_ESP_LCD_PANEL
+    esp_lcd_panel_handle_t panel_handle = NULL;
+    panel_handle = lcd_100ask_esp_lcd_panel_init(user_data);
+    if(panel_handle == NULL)    ESP_LOGE(TAG, "panel_handle == NULL");
+
+    return panel_handle;
 #endif
 
 }
@@ -75,6 +88,7 @@ esp_err_t display_100ask_hal_init(void)
 // LVGL library releated functions
 void display_100ask_hal_lvgl_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_map)
 {
+#if CONFIG_USE_100ASK_SPI_DISPLAY_SCREEN && CONFIG_USE_100ASK_DISPLAY_SCREEN_SPI_DRIVE
     uint32_t size = lv_area_get_width(area) * lv_area_get_height(area);
 
     currentUpdate->buffer  = (lcd_display_color_t *)color_map;
@@ -86,11 +100,29 @@ void display_100ask_hal_lvgl_flush(lv_disp_drv_t * drv, const lv_area_t * area, 
     currentUpdate->area.y2 = area->y2;
 
     xQueueSend(display_task_queue, &currentUpdate, portMAX_DELAY);
+#elif CONFIG_USE_100ASK_DISPLAY_SCREEN_ESP_LCD_PANEL
+    esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
+    if (panel_handle == NULL)
+    {
+        ESP_LOGI(TAG, "panel_handle == NULL");
+        return;
+    }
+    int offsetx1 = area->x1;
+    int offsetx2 = area->x2;
+    int offsety1 = area->y1;
+    int offsety2 = area->y2;
+    // copy a buffer's content to a specific area of the display
+    esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, color_map);
+#endif
 }
 
 void display_100ask_hal_set_rotation(display_100ask_rotation_t rotation)
 {
+#if CONFIG_USE_100ASK_SPI_DISPLAY_SCREEN && CONFIG_USE_100ASK_DISPLAY_SCREEN_SPI_DRIVE
     lcd_100ask_spi_set_rotation(rotation);
+#elif CONFIG_USE_100ASK_DISPLAY_SCREEN_ESP_LCD_PANEL
+    lcd_100ask_esp_lcd_panel_set_rotation(rotation);
+#endif
 }
 
 /**********************
