@@ -1,6 +1,6 @@
 file(GLOB_RECURSE SOURCES   epd_100ask_drivers/src/*.c
                             epd_100ask_paint/src/*.c
-                            display_100ask_driver/src/*.c
+                            display_100ask_drivers/src/*.c
                             fc_joypad_100ask_drivers/src/*.c
                             fs_100ask_drivers/src/*.c
                             lv_lib_100ask/src/*.c
@@ -15,7 +15,7 @@ idf_component_register(SRCS ${SOURCES}
                        INCLUDE_DIRS . 
                             epd_100ask_drivers/src
                             epd_100ask_paint/src
-                            display_100ask_driver/src
+                            display_100ask_drivers/src
                             fc_joypad_100ask_drivers/src
                             fs_100ask_drivers/src
                             lv_lib_100ask
