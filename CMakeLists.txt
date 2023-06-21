@@ -24,5 +24,5 @@ idf_component_register(SRCS ${SOURCES}
                             lvgl/demos
                             lvgl/examples
                             lvgl/src
-                            REQUIRES fatfs)
+                            REQUIRES fatfs esp_lcd)
 

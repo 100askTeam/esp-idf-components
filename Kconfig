@@ -1,7 +1,7 @@
 menu "100ask components"
     rsource "epd_100ask_drivers/Kconfig"
     rsource "epd_100ask_paint/Kconfig"
-    rsource "tft_lcd_100ask_drivers/Kconfig"
+    rsource "display_100ask_driver/Kconfig"
     rsource "fc_joypad_100ask_drivers/Kconfig"
     rsource "fs_100ask_drivers/Kconfig"
     rsource "lv_lib_100ask/Kconfig"
