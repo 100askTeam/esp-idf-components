@@ -109,6 +109,8 @@ void lcd_100ask_spi_set_window(uint16_t start_x, uint16_t start_y, uint16_t end_
  */
 void lcd_100ask_spi_set_rotation(lcd_display_rotation_t rotation);
 
+void lcd_100ask_spi_set_clear(uint16_t color_le);
+
 /**********************
  *      MACROS
  **********************/

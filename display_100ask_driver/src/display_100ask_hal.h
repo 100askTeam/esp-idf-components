@@ -55,6 +55,8 @@ void display_100ask_hal_lvgl_flush(lv_disp_drv_t * drv, const lv_area_t * area, 
 
 void display_100ask_hal_set_rotation(display_100ask_rotation_t rotation);
 
+void display_100ask_hal_set_clear(uint16_t color_le);
+
 /**********************
  *      MACROS
  **********************/

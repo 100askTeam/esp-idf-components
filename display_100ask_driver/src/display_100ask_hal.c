@@ -125,6 +125,13 @@ void display_100ask_hal_set_rotation(display_100ask_rotation_t rotation)
 #endif
 }
 
+void display_100ask_hal_set_clear(uint16_t color_le)
+{
+#if CONFIG_USE_100ASK_SPI_DISPLAY_SCREEN && CONFIG_USE_100ASK_DISPLAY_SCREEN_SPI_DRIVE
+    lcd_100ask_spi_set_clear(color_le);
+#endif
+}
+
 /**********************
  *   STATIC FUNCTIONS
  **********************/

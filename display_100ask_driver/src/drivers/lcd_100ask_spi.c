@@ -199,6 +199,27 @@ void lcd_100ask_spi_set_rotation(lcd_display_rotation_t rotation)
     lcd_100ask_config(rotation);
 }
 
+
+void lcd_100ask_spi_set_clear(uint16_t color_le)
+{
+    lcd_100ask_spi_set_window(0, 0, CONFIG_DISPLAY_SCREEN_100ASK_WIDTH, CONFIG_DISPLAY_SCREEN_100ASK_HEIGHT); // We ignore margins here
+	
+	size_t update_size = CONFIG_DISPLAY_SCREEN_100ASK_WIDTH * CONFIG_DISPLAY_SCREEN_100ASK_HEIGHT;
+    uint16_t color_be = (color_le << 8) | (color_le >> 8);
+    uint16_t mod  = update_size % SPI_BUFFER_SIZE;
+    uint16_t count = update_size / SPI_BUFFER_SIZE;
+
+	uint16_t * update_buffer = spi_get_buffer();
+	for (size_t j = 0; j < SPI_BUFFER_SIZE; ++j)
+        update_buffer[j] = color_be;
+
+    for(uint16_t i = 0; i < count; i++)
+    {
+        lcd_send_data(update_buffer, SPI_BUFFER_SIZE * sizeof(lcd_display_color_t));
+    }
+    if(mod > 0)	lcd_send_data(update_buffer, mod * sizeof(lcd_display_color_t));
+}
+
 /**********************
  *   STATIC FUNCTIONS
  **********************/
